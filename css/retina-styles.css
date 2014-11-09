@@ -1,0 +1,441 @@
+/*
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    min-height: 100%;
+}
+
+body {
+    font-family: 'Helvetica Neue', Helvetica, sans-serif;
+    margin: 0 12px;
+    background-color: #fff;
+}
+*/
+
+span.new-term, span.expression-term {
+    display: inline-block;
+    font-weight: 500;
+    letter-spacing: -.05em;
+    height: 33px;
+    line-height: 30px;
+    font-size: 16px;
+}
+
+span.expression-term, .expression-field .ui-state-highlight {
+    border-radius: 17px;
+    padding: 0 11px;
+}
+
+span.operator {
+    height: 22px;
+    line-height: 21px;
+    border-radius: 11px;
+    padding: 0 9px;
+    font-size: 11px;
+    position: relative;
+    top: -2px;
+}
+
+.expression-field {
+    font-family: 'Helvetica Neue', Helvetica, sans-serif;
+    margin-left: -3px;
+}
+
+.expression-field span {
+    margin-top: 12px;
+    display: inline-block;
+}
+
+.expression-field span:focus {
+    outline: none;
+}
+
+.expression-field span.expression-term {
+    cursor: default;
+}
+
+.expression-field span.expression-term[contenteditable] {
+    cursor: text;
+}
+
+.large .expression-field span {
+    height: 84px;
+    line-height: 71px;
+    font-size: 54px;
+}
+
+.large .expression-field span.expression-term, .large .expression-field .ui-state-highlight {
+    border-radius: 42px;
+    padding: 0 31px;
+}
+
+.large .expression-field span.operator {
+    margin: 0;
+    position: relative;
+    top: -5px;
+    height: 35px;
+    line-height: 35px;
+    border-radius: 18px;
+    padding: 0 16px;
+    font-size: 25px;
+}
+
+.expression-field span.expression-term.editing, .expression-field span.expression-term.selected, .expression-field .ui-sortable-helper {
+    background-color: #366bda !important;
+    border: 1px solid transparent !important;
+    color: white;
+}
+
+.expression-field span.expression-term.operator.editing, .expression-field span.expression-term.operator.selected {
+    border: none !important;
+}
+
+.expression-field .new-term {
+    border-color: transparent;
+    position: relative;
+    padding: 0 6px;
+    color: #252525;
+}
+
+.expression-field .new-term::before {
+    content: "Expression...";
+    position: absolute;
+    color: rgba(0, 0, 0, 0.43);
+    white-space: nowrap;
+    left: 6px;
+}
+
+.large .expression-field .new-term {
+    padding: 0 12px;
+}
+
+.large .expression-field .new-term::before {
+    left: 12px;
+    color: rgba(0, 0, 0, 0.13);
+}
+
+.expression-field .new-term:focus::before {
+    content: "Enter an expression...";
+}
+
+.expression-field .new-term.adding:focus::before {
+    content: "Add term...";
+}
+
+.expression-field .new-term.has-text::before, .expression-field .new-term.has-text:focus::before {
+    content: "";
+}
+
+.expression-results {
+    position: relative;
+    color: #929292;
+}
+
+/* position necessary for animations */
+.expression-results li span.expression-term {
+    margin: 0 1px 0 0;
+}
+
+.expression-results ul {
+    list-style-type: none;
+}
+
+.expression-results li {
+    line-height: 54px;
+    cursor: pointer;
+}
+
+.expression-field .ui-sortable-helper {
+    padding: 0 !important;
+    text-align: center;
+}
+
+.expression-field .ui-state-highlight {
+    background-color: #ddd;
+    border: none;
+    margin-top: 12px;
+    padding: 0;
+}
+
+.expression-term {
+    border: 1px solid #252525;
+    color: #252525;
+}
+
+.operator {
+    border: none;
+    background-color: #252525;
+    color: white;
+}
+
+.btw-term {
+    width: 1px;
+    border: none;
+    position: relative;
+    z-index: 1;
+    box-sizing: content-box;
+}
+
+.btw-term:hover {
+    background-color: #ddd;
+    padding: 0 9px;
+    margin: 0 -10px;
+    border: 1px solid #dd4b39;
+    border-radius: 18px;
+}
+
+.nav {
+    text-align: center;
+    padding-top: 12px;
+    position: relative;
+}
+
+.nav button {
+    font-family: 'Helvetica Neue', Helvetica, sans-serif;
+    font-size: 16px;
+    background-color: transparent;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #dd4b39;
+    padding: 0 6px 2px 8px;
+    margin: 0 9px;
+    line-height: 2;
+    text-align: center;
+}
+
+.nav button:focus {
+    outline: none;
+}
+
+.nav button.active, #nav button:active, #nav button.active:hover {
+    background-color: #dd4b39;
+    font-weight: 500;
+    color: white;
+}
+
+.nav [disabled] {
+    display: none;
+    color: #999;
+    cursor: default;
+}
+
+.btn-shortcuts {
+    position: absolute;
+    right: 0;
+    color: #ddd;
+    cursor: pointer;
+    font-size: 20px;
+    top: -33px;
+    height: 33px;
+    line-height: 33px;
+    padding: 0 31px 0 11px;
+}
+
+.large .btn-shortcuts {
+    top: -84px;
+    height: 84px;
+    line-height: 84px;
+}
+
+.btn-shortcuts .fa {
+    line-height: 33px;
+}
+
+.large .btn-shortcuts .fa {
+    line-height: 84px;
+}
+
+.btn-shortcuts:hover {
+    color: #929292;
+}
+
+.btn-shortcuts.active {
+    color: #dd4b39;
+}
+
+ul.context-nav {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    float: left;
+}
+
+ul.context-nav li {
+    display: inline;
+    font-size: 16px;
+    padding: 16px 0;
+    margin: 0 0 0 31px;
+    color: #929292;
+}
+
+ul.context-nav li.active {
+    -webkit-box-shadow: inset 0px -4px 0px 0px #dd4b39;
+    box-shadow: inset 0px -4px 0px 0px #dd4b39;
+    color: #dd4b39;
+    cursor: default;
+}
+
+ul.pos-filter {
+    list-style-type: none;
+    text-align: center;
+    padding: 0 12px 0 0;
+    margin: 0 31px 0 0;
+    float: right;
+    background: url('../img/icon-filter.png') center right no-repeat;
+    cursor: pointer;
+}
+
+ul.pos-filter li {
+    display: block;
+    float: right;
+    line-height: 1;
+    white-space: nowrap;
+    font-size: 16px;
+    padding: 16px 0;
+    margin: 0 12px 0 0;
+    color: #929292;
+}
+
+ul.pos-filter li.active {
+    color: #252525;
+    font-weight: 500;
+}
+
+ul.similar-terms {
+    list-style-type: none;
+    padding: 12px 31px;
+    margin: 0;
+}
+
+ul.similar-terms li {
+}
+
+ul.similar-terms li span.context-name {
+    -webkit-box-shadow: inset 0px -1px 0px 0px #ddd;
+    box-shadow: inset 0px -1px 0px 0px #ddd;
+    padding: 0;
+    font-size: 16px;
+    color: #252525;
+    line-height: 54px;
+    font-weight: normal;
+    display: block;
+}
+
+ul.similar-terms li:hover span.context-name {
+    -webkit-box-shadow: inset 0px -1px 0px 0px #dd4b39;
+    box-shadow: inset 0px -1px 0px 0px #dd4b39;
+}
+
+ul.similar-terms li span.similarity-score {
+    -webkit-box-shadow: none;
+    box-shadow: none;
+    display: none;
+    float: right;
+    padding: 0;
+    font-size: 16px;
+    color: #dd4b39;
+    line-height: 54px;
+    font-weight: 500;
+}
+
+ul.similar-terms li:hover span.similarity-score {
+    display: block;
+}
+
+ul.similar-terms.expressionHasChanged {
+    opacity: 0.4;
+}
+
+#version-number {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    width: 960px;
+    font-size: 12px;
+    color: #ddd;
+    margin-left: -480px;
+    text-align: center;
+    padding: 0 0 30px;
+}
+
+#version-number:hover {
+    color: #252525;
+}
+
+#sub-nav {
+}
+
+#sub-nav:before, #sub-nav:after {
+    content: " ";
+    display: table;
+}
+
+#sub-nav:after {
+    clear: both;
+}
+
+.keyboard-key {
+    border-radius: 4px;
+    background-color: #929292;
+    color: white;
+    padding: 4px 8px;
+    font-weight: 500;
+    font-size: 110%;
+    line-height: 2;
+}
+
+.smaller-font {
+    font-size: 90%;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.col {
+    width: 50%;
+}
+
+.col table {
+    margin: 0 auto;
+}
+
+.col table, th, td {
+    border: none;
+}
+
+.col td {
+    color: #929292;
+    padding: 4px;
+    white-space: nowrap;
+    font-size: 14px;
+}
+
+.col td:first-child {
+    text-align: right;
+}
+
+.col td:last-child {
+    text-align: left;
+}
+
+.col-left {
+    float: left;
+}
+
+.col-right {
+    float: right;
+}
+
+#loading-message {
+    padding-left: 31px;
+}
+
+#loading-spinner {
+    margin-right: 12px;
+    position: relative;
+    top: 6px;
+}

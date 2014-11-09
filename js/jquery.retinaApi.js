@@ -1,6 +1,3 @@
-/**
- * TODO
- */
 (function ($) {
 
     /**
@@ -14,7 +11,7 @@
         var basePath = "http://languages.cortical.io:80/rest/";
 
         /**
-         * TODo
+         * TODO
          * @param options
          * @param callback
          * @returns {void|n.extend|*}
@@ -25,7 +22,7 @@
                 options = {callback: options};
             }
 
-            options = $.extend({}, $.cortical.defaultOptions, options);
+            options = $.extend({}, $.retinaApi.defaultOptions, options);
 
             if ($.isFunction(callback)) {
                 options.callback = callback;
@@ -106,14 +103,14 @@
             }).then(function (data) {
 
                     if (!data) {
-                        options.callback(false, $.cortical.errors.NoDataError);
+                        options.callback(false, $.retinaApi.errors.NoDataError);
                         return;
                     }
 
                     try {
                         options.callback(data);
                     } catch (e) {
-                        options.callback(false, new $.cortical.errors.InvalidJSON(e));
+                        options.callback(false, new $.retinaApi.errors.InvalidJSON(e));
                     }
 
                 });
