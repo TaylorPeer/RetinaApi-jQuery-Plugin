@@ -1,27 +1,29 @@
 (function ($) {
 
     /**
-     * TODO
+     * Append the Retina API to the jQuery object
      */
     $.retinaApi = (function () {
 
         /**
-         * TODO
+         * Base path of the API endpoint
          */
-        var basePath = "http://languages.cortical.io:80/rest/";
+        var basePath = "http://54.78.205.206/rest/";
 
         /**
-         * TODO
+         * Ensures default options are used for REST calls if no options were specified
          * @param options
          * @param callback
          * @returns {void|n.extend|*}
          */
-        var prepareOptions = function (options, callback) {
+        function prepareOptions(options, callback) {
 
+            // Checks if options is actually the callback function (for the case that no options were specified)
             if ($.isFunction(options)) {
                 options = {callback: options};
             }
 
+            // Add all default options
             options = $.extend({}, $.retinaApi.defaultOptions, options);
 
             if ($.isFunction(callback)) {
@@ -36,7 +38,7 @@
          * @param options
          * @returns {*}
          */
-        var getUrlParameters = function (options) {
+        function getUrlParameters(options) {
 
             var params = {};
 
@@ -60,6 +62,10 @@
                 params.retina_name = options.retinaName;
             }
 
+            if (typeof options.sparsity != "undefined") {
+                params.sparsity = options.sparsity;
+            }
+
             if (typeof options.startIndex != "undefined") {
                 params.start_index = options.startIndex;
             }
@@ -69,16 +75,35 @@
             }
 
             return $.param(params);
-        };
+        }
 
         /**
-         * TODO
+         * Makes a GET request
+         * @param url
+         * @param options
+         */
+        function get(url, options) {
+            sendRequest(url, "GET", null, options);
+        }
+
+        /**
+         * Makes a POST request
+         * @param url
+         * @param data
+         * @param options
+         */
+        function post(url, data, options) {
+            sendRequest(url, "POST", data, options);
+        }
+
+        /**
+         * Sends an API request
          * @param url
          * @param type
          * @param data
          * @param options
          */
-        var sendRequest = function (url, type, data, options) {
+        function sendRequest(url, type, data, options) {
 
             var params = getUrlParameters(options);
 
@@ -98,44 +123,47 @@
                 },
                 type: type,
                 data: data,
-                datatype: "json"
-                // TODO error: handleRequestError
+                datatype: "json",
+                error: options.errorHandler
             }).then(function (data) {
 
-                    if (!data) {
-                        options.callback(false, $.retinaApi.errors.NoDataError);
-                        return;
-                    }
+                if (!data) {
+                    options.callback(false, $.retinaApi.errors.NoDataError);
+                    return;
+                }
 
-                    try {
-                        options.callback(data);
-                    } catch (e) {
-                        options.callback(false, new $.retinaApi.errors.InvalidJSON(e));
-                    }
+                try {
+                    options.callback(data);
+                } catch (e) {
+                    options.callback(false, new $.retinaApi.errors.InvalidJSON(e));
+                }
 
-                });
-        };
+            });
+        }
 
         return {
 
             /**
-             * TODO
+             * Standard options
              */
             defaultOptions: {
                 apiKey: "",
                 beforeSend: $.noop,
                 callback: $.noop,
                 contextId: undefined,
+                data: undefined,
+                errorHandler: $.noop,
                 getFingerprint: undefined,
                 maxResults: undefined,
                 posType: undefined,
                 retinaName: undefined,
+                sparsity: undefined,
                 term: undefined,
                 startIndex: undefined
             },
 
             /**
-             * TODO
+             * API errors
              */
             errors: {
                 NoDataError: { type: 'NoDataError', message: "No data was supplied to the callback."},
@@ -154,7 +182,7 @@
              */
             getRetinas: function (options, callback) {
                 options = prepareOptions(options, callback);
-                sendRequest('retinas', "GET", null, options);
+                get('retinas', options);
             },
 
             /**
@@ -164,7 +192,7 @@
              */
             getTerms: function (options, callback) {
                 options = prepareOptions(options, callback);
-                sendRequest('terms', "GET", null, options);
+                get('terms', options);
             },
 
             /**
@@ -174,7 +202,7 @@
              */
             getTermContexts: function (options, callback) {
                 options = prepareOptions(options, callback);
-                sendRequest('terms/contexts', "GET", null, options);
+                get('terms/contexts', options);
             },
 
             /**
@@ -184,8 +212,31 @@
              */
             getTermSimilarTerms: function (options, callback) {
                 options = prepareOptions(options, callback);
-                sendRequest('terms/similar_terms', "GET", null, options);
+                get('terms/similar_terms', options);
+            },
+
+            // TODO /text
+            // TODO /text/keywords
+            // TODO /text/tokenize
+            // TODO /text/slices
+            // TODO /text/bulk
+
+            processExpression: function (options, callback) {
+                options = prepareOptions(options, callback);
+                post('expressions', options.data, options);
             }
+
+            // TODO /expressions/contexts
+            // TODO /expressions/similar_terms
+            // TODO /expressions/bulk
+            // TODO /expressions/contexts/bulk
+            // TODO /expressions/similar_terms/bulk
+
+            // TODO /compare
+
+            // TODO /image
+            // TODO /image/compare
+            // TODO /image/bulk
 
         };
 
