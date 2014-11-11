@@ -6,7 +6,7 @@
     $.retinaElements = (function () {
 
         /**
-         * Include stylesheet
+         * Load external stylesheet and append to the current document
          */
         $(function () {
             $('head').append('<link rel="stylesheet" href="css/retina-styles.css" type="text/css" />');
@@ -18,23 +18,48 @@
          */
         function expressionEditor($element) {
 
-            var expressionTermTextBeforeDelete = '';
-            var selectedExpressionTermText = '';
-            var operatorKeys = {
+            /**
+             * Maximum length of a retina term in characters
+             * @type {number}
+             */
+            var TERM_CHAR_LIMIT = 30;
+
+            /**
+             * Collection of operators used in Retina expressions
+             */
+            var OPERATORS = {
                 '+': 'AND',
                 '|': 'OR',
                 '!': 'NOT',
                 '-': 'SUB',
                 '^': 'XOR'
             };
+
+            /**
+             * Collection of key code aliases
+             */
+            var KEYSTROKES = {
+                'BACKSPACE': 8,
+                'TAB': 9,
+                'ENTER': 13,
+                'SPACE': 32,
+                'LEFT_ARROW': 37,
+                'UP_ARROW': 38,
+                'RIGHT_ARROW': 39,
+                'DOWN_ARROW': 40,
+                'DELETE' : 46
+            };
+
+            var expressionTermTextBeforeDelete = '';
+            var selectedExpressionTermText = '';
             var lastSelectedExpressionTerm;
             var $currentRetinaExpression;
-            var characterLimit = 30;
 
             createExpressionEditor($element);
 
             /**
-             * TODO
+             * Create an expression editor out of a DOM element
+             * @param $element
              */
             function createExpressionEditor($element) {
 
@@ -64,12 +89,13 @@
             }
 
             /**
-             * TODO
+             * Moves the cursor to the end of the expression
              * @param $elements
              */
             function placeCursorAtEnd($elements) {
 
                 if (typeof $elements === "undefined") {
+
                     $elements = $currentRetinaExpression.find('.new-term');
 
                     // remove any selections
@@ -96,7 +122,7 @@
             }
 
             /**
-             * TODO
+             * Ensures that span elements are located between all terms in the expression, so that new terms may be entered at any position
              */
             function ensureBtwTermsCorrect() {
 
@@ -151,18 +177,21 @@
              */
             function ensureNewTermPlaceholderTextCorrect() {
                 $element.find('.expression-field').each(function () {
-                    var $this = $(this),
-                        $span = $this.find('span'),
-                        $newTerm = $this.find('.new-term'),
-                        notInTheLastPosition = $span.index($newTerm) != $span.length - 1 ? true : false, // see if we are adding to the end of the expression or are somewhere in the middle
-                        newTermText = $.trim($newTerm.text());
+                    var $this = $(this);
+                    var $span = $this.find('span');
+                    var $newTerm = $this.find('.new-term');
+
+                    // Check if term is being added at the end of the expression or somewhere in the middle
+                    var notInTheLastPosition = !isLastPosition($newTerm, $span);
+
+                    var newTermText = $.trim($newTerm.text());
                     if (newTermText == '' && !notInTheLastPosition) {
                         $newTerm.removeClass('has-text');
                     }
                     if (newTermText == '' && $this.find('.expression-term').length == 0) {
                         $newTerm.removeClass('adding');
                     }
-                    if (notInTheLastPosition && !($this.parent().equals($currentRetinaExpression))) {
+                    if (notInTheLastPosition && !($this.parent().is($currentRetinaExpression))) {
                         $newTerm.removeClass('new-term').addClass('btw-term');
                         addTermIfNeeded();
                     }
@@ -188,7 +217,8 @@
                     },
                     tolerance: "pointer",
                     helper: function (event, item) {
-                        // make sure at least one item is selected.
+
+                        // make sure at least one item is selected
                         if (!item.hasClass("selected")) {
                             item.addClass("selected").siblings().removeClass("selected");
                         }
@@ -207,6 +237,7 @@
                         return $helper;
                     },
                     stop: function (event, ui) {
+
                         // add the cloned ones
                         var $cloned = ui.item.data("multi-sortable");
                         ui.item.removeData("multi-sortable");
@@ -243,7 +274,7 @@
             function checkForOperator($el) {
                 var isOperator = false,
                     termText = $el.text();
-                $.each(operatorKeys, function (key, value) {
+                $.each(OPERATORS, function (key, value) {
                     if (termText.toUpperCase() === value) { // if matches the word name of operator, add it as an operator
                         termText = value;
                         isOperator = true;
@@ -259,42 +290,56 @@
             }
 
             /**
-             * TODO
-             * @type {_mouseStart}
+             * Checks if a term is located at the last position of a span
+             * @param $term
+             * @param $span
+             * @returns {boolean}
              */
-            // hook into sortable prototype so that we can remove <span>s before sorting starts, see the CustomBeforeStart option
+            function isLastPosition($term, $span) {
+                return $span.index($term) == $span.length - 1;
+            }
+
+            // Override sortable prototype so that span elements can be removed before sorting
             var oldMouseStart = $.ui.sortable.prototype._mouseStart;
             $.ui.sortable.prototype._mouseStart = function (event, overrideHandle, noActivation) {
                 this._trigger("CustomBeforeStart", event, this._uiHash());
                 oldMouseStart.apply(this, [event, overrideHandle, noActivation]);
             };
 
-            $('body').on('keydown', function (e) { // key was pressed outside of field
+            // Listen for keystrokes outside of field
+            $('body').on('keydown', function (e) {
 
-                if (e.which == 8 || e.which == 46) { // DEL or BKSP
-                    if ($currentRetinaExpression.find('.selected').length) { // there are selected expression-terms
+                if (e.which == KEYSTROKES.BACKSPACE || e.which == KEYSTROKES.DELETE) {
+                    // there are selected expression-terms
+                    if ($currentRetinaExpression.find('.selected').length) {
                         e.preventDefault();
                         var eventToTrigger = $.Event('keydown');
-                        eventToTrigger.which = 8; // BKSP
+                        eventToTrigger.which = KEYSTROKES.BACKSPACE;
                         $currentRetinaExpression.find('.new-term').focus().trigger(eventToTrigger);
                     }
                 }
-                if ((e.which == 9 || e.which == 13) && $currentRetinaExpression.find('.selected').length) { // TAB or ENTER
+
+                if ((e.which == KEYSTROKES.TAB || e.which == KEYSTROKES.ENTER) && $currentRetinaExpression.find('.selected').length) {
                     e.preventDefault();
-                    // TODO if (e.which == 13) fetchExpressionResults(); // if ENTER
-                    // TODO if (e.which == 9) clearExpressionResults(); // if TAB
+                    // TODO if (e.which == KEYSTROKES.ENTER) fetchExpressionResults();
+                    // TODO if (e.which == KEYSTROKES.TAB) clearExpressionResults();
                     placeCursorAtEnd();
                 }
-                if (e.which == 37 || e.which == 39) { // LEFT ARROW or RIGHT ARROW
-                    //e.preventDefault();
-                    var $expressionTerm = $currentRetinaExpression.find('.expression-field').find('.expression-term'),
-                        $selected = $expressionTerm.parent().find('.selected');
+
+                if (e.which == KEYSTROKES.LEFT_ARROW || e.which == KEYSTROKES.RIGHT_ARROW) {
+
+                    var $expressionTerm = $currentRetinaExpression.find('.expression-field').find('.expression-term');
+                    var $selected = $expressionTerm.parent().find('.selected');
+
                     if ($selected.length) { // if we have some selected we can use arrow keys to move the selection
+
                         if (!(e.shiftKey)) {
                             $expressionTerm.removeClass('selected');
                         }
-                        if (e.which == 37) {
-                            if (lastSelectedExpressionTerm.equals($($selected[$selected.length - 1])) && $selected.length > 1) {
+
+                        if (e.which == KEYSTROKES.LEFT_ARROW) {
+
+                            if (lastSelectedExpressionTerm.is($($selected[$selected.length - 1])) && $selected.length > 1) {
                                 // they must have reversed direction so we're going to start unselecting
                                 $($selected[$selected.length - 1]).removeClass('selected');
                                 lastSelectedExpressionTerm = $($selected[$selected.length - 2]);
@@ -306,8 +351,10 @@
                                     lastSelectedExpressionTerm = $($selected[0]).addClass('selected');
                                 }
                             }
+
                         } else {
-                            if (lastSelectedExpressionTerm.equals($($selected[0])) && $selected.length > 1) {
+
+                            if (lastSelectedExpressionTerm.is($($selected[0])) && $selected.length > 1) {
                                 // they must have reversed direction so we're going to start unselecting
                                 $($selected[0]).removeClass('selected');
                                 lastSelectedExpressionTerm = $($selected[1]);
@@ -316,7 +363,6 @@
                                     //prevents going past the right edge
                                     lastSelectedExpressionTerm = $($selected[$selected.length - 1]).nextAll('.expression-term:first').addClass('selected');
                                 } else {
-                                    //lastSelectedExpressionTerm = $($selected[$selected.length-1]).addClass('selected');
                                     if (!(e.shiftKey)) { // jump into new-term
                                         placeCursorAtEnd();
                                     }
@@ -326,20 +372,23 @@
                     }
                 }
             }).on('keydown', '.new-term', function (e) {
+
                 $(this).addClass('has-text');
                 var $span = $currentRetinaExpression.find('.expression-field').find('span');
-                var notInTheLastPosition = $span.index($(this)) != $span.length - 1 ? true : false; // see if we are adding to the end of the expression or are somewhere in the middle
+
+                // Check if term is being added at the end of the expression or somewhere in the middle
+                var notInTheLastPosition = !isLastPosition($(this), $span);
 
                 var newTermText = $.trim($(this).text());
                 $this = $(this);
 
-                if (e.which == 9 || e.which == 13) { // TAB or ENTER
+                if (e.which == KEYSTROKES.TAB || e.which == KEYSTROKES.ENTER) {
                     e.preventDefault();
                     e.stopPropagation();
                     if (newTermText == '') { // if blank new-term
-                        // TODO if (e.which == 13) fetchExpressionResults(); // if ENTER
+                        // TODO if (e.which == KEYSTROKES.ENTER) fetchExpressionResults();
                         if (notInTheLastPosition) { // if ENTER/TAB and in the middle
-                            // TODO if (e.which == 9) clearExpressionResults(); // if TAB
+                            // TODO if (e.which == KEYSTROKES.TAB) clearExpressionResults();
                             $this.remove();
                             addTermIfNeeded();
                             placeCursorAtEnd();
@@ -360,16 +409,19 @@
                                 }
                             }
                         }
-                        return; // in case the field is blank, do nothing else
+
+                        // in case the field is blank, do nothing else
+                        return;
                     }
                     checkForOperator($this);
                     $this.addClass('expression-term').removeClass('new-term has-text adding').removeAttr('contenteditable');
                     addTermIfNeeded();
                     placeCursorAtEnd();
-                    // TODO if (e.which == 9) clearExpressionResults(); // if TAB
-                    // TODO if (e.which == 13) fetchExpressionResults(); // ENTER, runs after a new-term has been added
+                    // TODO if (e.which == KEYSTROKES.TAB) clearExpressionResults(); // if TAB
+                    // TODO if (e.which == KEYSTROKES.ENTER) fetchExpressionResults(); // runs after a new-term has been added
                 }
-                if (e.which == 8 || e.which == 46) { // DEL or BKSP
+
+                if (e.which == KEYSTROKES.BACKSPACE || e.which == KEYSTROKES.DELETE) {
                     if (newTermText == '') {
                         e.preventDefault();
                         // if(notInTheLastPosition) return; // if we're somewhere in the middle, don't delete any terms
@@ -377,17 +429,18 @@
                         var $selected = $currentRetinaExpression.find('.expression-field').find('.selected');
                         if ($selected.length) { // if we've selected any, delete those first before deleting the previous
                             $selected.remove();
-                        } else if (e.which == 8) { // BKSP
+                        } else if (e.which == KEYSTROKES.BACKSPACE) {
                             $this.prev().remove(); // if we just pressed BKSP with a blank new-term, remove the previous expression-term
                         }
                         placeCursorAtEnd();
                         // TODO clearExpressionResults();
                     }
                 }
-                if (e.which == 37 || e.which == 39) { // LEFT ARROW or RIGHT ARROW
+
+                if (e.which == KEYSTROKES.LEFT_ARROW || e.which == KEYSTROKES.RIGHT_ARROW) {
                     if (newTermText == '') {
                         var newTermIndex = $span.index($this);
-                        if (e.which == 37) {
+                        if (e.which == KEYSTROKES.LEFT_ARROW) {
                             if (newTermIndex != 0) { // prevent going left if at the first item
                                 if (e.shiftKey) {
                                     e.stopPropagation();
@@ -396,51 +449,63 @@
                                     $($span.get(newTermIndex - 2)).trigger('click');
                                 }
                             }
-                        } else {
-                            if (notInTheLastPosition) $($span.get(newTermIndex + 2)).trigger('click');
+                        } else if (notInTheLastPosition) {
+                            $($span.get(newTermIndex + 2)).trigger('click');
                         }
                     }
                 }
-                if (e.which == 38 || e.which == 40) { // UP ARROW or DOWN ARROW
-                    e.preventDefault(); // don't allow it
+
+                if (e.which == KEYSTROKES.UP_ARROW || e.which == KEYSTROKES.DOWN_ARROW) {
+                    e.preventDefault();
                 }
-                if (e.which == 32) { // SPACE -- prevents placeholder text bug
+
+                if (e.which == KEYSTROKES.SPACE) {
                     if (newTermText == '') e.preventDefault();
                 }
+
             }).on('keyup', '.new-term', function (e) {
+
                 var $this = $(this),
                     newTermText = $.trim($this.text());
                 ensureNewTermPlaceholderTextCorrect();
                 // TODO clearExpressionResults();
-                $.each(operatorKeys, function (key, value) { // keyboard shortcut checker
+                $.each(OPERATORS, function (key, value) { // keyboard shortcut checker
                     if (newTermText === key) {
                         var eventToTrigger = $.Event('keydown');
-                        eventToTrigger.which = 9; // TAB
+                        eventToTrigger.which = KEYSTROKES.TAB; // TAB
                         $this.text(value); // Change text to the operator word
                         $this.trigger(eventToTrigger);
                         return false;
                     }
                 });
-                if (newTermText.length > characterLimit) {
-                    $this.text(newTermText.substr(0, characterLimit));
+
+                if (newTermText.length > TERM_CHAR_LIMIT) {
+                    $this.text(newTermText.substr(0, TERM_CHAR_LIMIT));
                     placeCursorAtEnd();
                 }
+
             }).on('keydown', '.expression-term', function (e) {
-                if (e.which == 9 || e.which == 13) { // TAB or ENTER
+
+                if (e.which == KEYSTROKES.TAB || e.which == KEYSTROKES.ENTER) {
                     e.preventDefault();
                     var $this = $(this);
                     checkForOperator($this);
                     placeCursorAtEnd();
                     selectedExpressionTermText = '';
                 }
-                if (e.which == 8 || e.which == 46) { // DEL or BKSP
+                if (e.which == KEYSTROKES.BACKSPACE || e.which == KEYSTROKES.DELETE) {
                     expressionTermTextBeforeDelete = $.trim($(this).text());
-                    if (expressionTermTextBeforeDelete == '') e.preventDefault(); // prevent browser from deleting <span> elements
+                    // prevent browser from deleting <span> elements
+                    if (expressionTermTextBeforeDelete == '') {
+                        e.preventDefault();
+                    }
                 }
+
             }).on('keyup', '.expression-term', function (e) {
+
                 var $this = $(this),
                     expressionTermText = $.trim($this.text());
-                if (e.which == 8 || e.which == 46) { // DEL or BKSP
+                if (e.which == KEYSTROKES.BACKSPACE || e.which == KEYSTROKES.DELETE) {
 
                     if ((expressionTermText == '' && expressionTermTextBeforeDelete == '' ) || (expressionTermTextBeforeDelete == selectedExpressionTermText && expressionTermText == '')) {
                         $this.remove();
@@ -450,21 +515,30 @@
                     }
                     expressionTermTextBeforeDelete = '';
                 }
-                if (expressionTermText.length > characterLimit) {
-                    $this.text(expressionTermText.substr(0, characterLimit));
+                if (expressionTermText.length > TERM_CHAR_LIMIT) {
+                    $this.text(expressionTermText.substr(0, TERM_CHAR_LIMIT));
                     placeCursorAtEnd($this);
                 }
+
             }).on('click', '.new-term', function () {
                 $currentRetinaExpression = $(this).parent().parent();
                 placeCursorAtEnd();
             }).on('click', '.btw-term', function () {
+
                 $currentRetinaExpression = $(this).parent().parent();
                 $currentRetinaExpression.find('.new-term').remove();
                 $(this).removeClass('btw-term').addClass('new-term');
                 var $span = $currentRetinaExpression.find('.expression-field').find('span');
-                var notInTheLastPosition = $currentRetinaExpression.find('.expression-field').find('span').index($(this)) != $span.length - 1 ? true : false; // see if we are adding to the end of the expression or are somewhere in the middle
-                if (notInTheLastPosition) $(this).addClass('has-text');
+
+                // Check if term is being added at the end of the expression or somewhere in the middle
+                var notInTheLastPosition = !isLastPosition($(this), $currentRetinaExpression.find('.expression-field').find('span'));
+
+                if (notInTheLastPosition) {
+                    $(this).addClass('has-text');
+                }
+
                 placeCursorAtEnd();
+
             }).on('click', '.expression-field .expression-term', function (e) {
 
                 $currentRetinaExpression = $(this).parent().parent();
@@ -513,32 +587,33 @@
                 addTermIfNeeded();
                 placeCursorAtEnd();
                 // TODO fetchExpressionResults();
-            }).on('click', '.cortical-io-expression', function (e) {
-
+            }).on('click', $element, function (e) {
+                // TODO
             }).on('click', function (e) {
 
-                $('.cortical-io-expression').find('.expression-term').removeClass('selected editing').removeAttr('contenteditable').blur(); // if there is a click anywhere
+                $element.find('.expression-term').removeClass('selected editing').removeAttr('contenteditable').blur(); // if there is a click anywhere
                 sortableEnable();
-                var $span = $currentRetinaExpression.find('.expression-field').find('span'),
-                    $newTerm = $currentRetinaExpression.find('.new-term'),
-                    notInTheLastPosition = $span.index($newTerm) != $span.length - 1 ? true : false, // see if we are adding to the end of the expression or are somewhere in the middle
-                    newTermText = $.trim($newTerm.text());
+                var $span = $currentRetinaExpression.find('.expression-field').find('span');
+                var $newTerm = $currentRetinaExpression.find('.new-term');
+
+                // Check if term is being added at the end of the expression or somewhere in the middle
+                var notInTheLastPosition = !isLastPosition($newTerm, $span);
+
+                var newTermText = $.trim($newTerm.text());
                 if (newTermText == '' && notInTheLastPosition && !($newTerm.is(":focus"))) {
                     $newTerm.remove();
                     addTermIfNeeded();
                     ensureBtwTermsCorrect();
                 }
-            }).on('blur', '.cortical-io-expression .new-term', function (e) {
-                ensureNewTermPlaceholderTextCorrect();
-                if (!($currentRetinaExpression.find('.similar-terms').length) && !($currentRetinaExpression.find('.nav').find('button').is('.active'))) { // we have don't have results AND nav is not active
-                    $currentRetinaExpression.find('.expression-results').html('');
-                }
+            })
+        }
 
-            }).on('blur', '.cortical-io-expression .expression-term', function (e) {
-                if ($.trim($(this).text()) == '') {
-                    $(this).remove();
-                }
-            });
+        /**
+         * Create a fingerprint canvas
+         * @param $element
+         */
+        function fingerprintCanvas($element) {
+            // TODO
         }
 
         /**
@@ -548,22 +623,19 @@
             if (this.is("div")) {
                 expressionEditor(this);
             } else {
-                // TODO handle other elements
+                throw "expressionEditor() is only applicable to DIV elements";
             }
         };
 
-        // TODO replace with .is
-        // for testing if two different jQuery objects contain the same set of elements
-        $.fn.equals = function (compareTo) {
-            if (!compareTo || this.length != compareTo.length) {
-                return false;
+        /**
+         * Attach the fingerprint canvas function to the jQuery object prototype
+         */
+        $.fn.fingerprintCanvas = function () {
+            if (this.is("div")) {
+                fingerprintCanvas(this);
+            } else {
+                throw "fingerprintCanvas() is only applicable to DIV elements";
             }
-            for (var i = 0; i < this.length; ++i) {
-                if (this[i] !== compareTo[i]) {
-                    return false;
-                }
-            }
-            return true;
         };
 
     }());
