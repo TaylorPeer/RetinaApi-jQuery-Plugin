@@ -13,10 +13,11 @@
         });
 
         /**
-         * Create an expression editor editable text field out of a DOM element
+         * Create an expression editor text field out of a DOM element
          * @param $element
+         * @param options
          */
-        function expressionEditor($element) {
+        function expressionEditor($element, options) {
 
             /**
              * Maximum length of a retina term in characters
@@ -47,7 +48,7 @@
                 'UP_ARROW': 38,
                 'RIGHT_ARROW': 39,
                 'DOWN_ARROW': 40,
-                'DELETE' : 46
+                'DELETE': 46
             };
 
             var expressionTermTextBeforeDelete = '';
@@ -72,6 +73,24 @@
                 placeCursorAtEnd();
 
                 sortableEnable();
+            }
+
+            /**
+             * Executes provided onEnterPress function when the enter key is pressed when the element has focus
+             */
+            function enterPressed() {
+                if ($.isFunction(options.onEnterPress)) {
+                    options.onEnterPress();
+                }
+            }
+
+            /**
+             * Executes provided onChange function when the element's expression has changed
+             */
+            function expressionChanged() {
+                if ($.isFunction(options.onChange)) {
+                    options.onChange();
+                }
             }
 
             /**
@@ -268,23 +287,32 @@
             }
 
             /**
-             * TODO
+             * Checks if a term is a reserved operator term
              * @param $el
              */
             function checkForOperator($el) {
-                var isOperator = false,
-                    termText = $el.text();
+
+                var termText = $el.text();
+                var isOperator = false;
+
                 $.each(OPERATORS, function (key, value) {
-                    if (termText.toUpperCase() === value) { // if matches the word name of operator, add it as an operator
+
+                    // If matches the word name of operator, add it as an operator
+                    if (termText.toUpperCase() === value) {
                         termText = value;
                         isOperator = true;
                         return false;
                     }
+
+                    // if matches an operator, but has quotes, just remove the quotes and keep as a standard term
                     var termTextWithoutQuotes = termText.replace(/["']/g, "");
                     if (termTextWithoutQuotes.toUpperCase() === value) {
-                        termText = termTextWithoutQuotes; // if matches an operator, but has quotes, just remove the quotes and keep as a standard term
+                        termText = termTextWithoutQuotes;
                     }
+
                 });
+
+                // Set element class and text
                 isOperator ? $el.addClass('operator') : $el.removeClass('operator');
                 $el.text(termText);
             }
@@ -321,8 +349,12 @@
 
                 if ((e.which == KEYSTROKES.TAB || e.which == KEYSTROKES.ENTER) && $currentRetinaExpression.find('.selected').length) {
                     e.preventDefault();
-                    // TODO if (e.which == KEYSTROKES.ENTER) fetchExpressionResults();
-                    // TODO if (e.which == KEYSTROKES.TAB) clearExpressionResults();
+                    if (e.which == KEYSTROKES.ENTER) {
+                        enterPressed();
+                    }
+                    if (e.which == KEYSTROKES.TAB) {
+                        expressionChanged();
+                    }
                     placeCursorAtEnd();
                 }
 
@@ -386,9 +418,14 @@
                     e.preventDefault();
                     e.stopPropagation();
                     if (newTermText == '') { // if blank new-term
-                        // TODO if (e.which == KEYSTROKES.ENTER) fetchExpressionResults();
+                        if (e.which == KEYSTROKES.ENTER) {
+                            enterPressed();
+                        }
+
                         if (notInTheLastPosition) { // if ENTER/TAB and in the middle
-                            // TODO if (e.which == KEYSTROKES.TAB) clearExpressionResults();
+                            if (e.which == KEYSTROKES.TAB) {
+                                expressionChanged();
+                            }
                             $this.remove();
                             addTermIfNeeded();
                             placeCursorAtEnd();
@@ -417,14 +454,12 @@
                     $this.addClass('expression-term').removeClass('new-term has-text adding').removeAttr('contenteditable');
                     addTermIfNeeded();
                     placeCursorAtEnd();
-                    // TODO if (e.which == KEYSTROKES.TAB) clearExpressionResults(); // if TAB
-                    // TODO if (e.which == KEYSTROKES.ENTER) fetchExpressionResults(); // runs after a new-term has been added
+                    expressionChanged();
                 }
 
                 if (e.which == KEYSTROKES.BACKSPACE || e.which == KEYSTROKES.DELETE) {
                     if (newTermText == '') {
                         e.preventDefault();
-                        // if(notInTheLastPosition) return; // if we're somewhere in the middle, don't delete any terms
 
                         var $selected = $currentRetinaExpression.find('.expression-field').find('.selected');
                         if ($selected.length) { // if we've selected any, delete those first before deleting the previous
@@ -433,7 +468,7 @@
                             $this.prev().remove(); // if we just pressed BKSP with a blank new-term, remove the previous expression-term
                         }
                         placeCursorAtEnd();
-                        // TODO clearExpressionResults();
+                        expressionChanged();
                     }
                 }
 
@@ -468,7 +503,6 @@
                 var $this = $(this),
                     newTermText = $.trim($this.text());
                 ensureNewTermPlaceholderTextCorrect();
-                // TODO clearExpressionResults();
                 $.each(OPERATORS, function (key, value) { // keyboard shortcut checker
                     if (newTermText === key) {
                         var eventToTrigger = $.Event('keydown');
@@ -492,14 +526,15 @@
                     checkForOperator($this);
                     placeCursorAtEnd();
                     selectedExpressionTermText = '';
-                }
-                if (e.which == KEYSTROKES.BACKSPACE || e.which == KEYSTROKES.DELETE) {
+                } else if (e.which == KEYSTROKES.BACKSPACE || e.which == KEYSTROKES.DELETE) {
+                    // Prevent browser from deleting <span> elements
                     expressionTermTextBeforeDelete = $.trim($(this).text());
-                    // prevent browser from deleting <span> elements
                     if (expressionTermTextBeforeDelete == '') {
                         e.preventDefault();
                     }
                 }
+
+                expressionChanged();
 
             }).on('keyup', '.expression-term', function (e) {
 
@@ -510,7 +545,6 @@
                     if ((expressionTermText == '' && expressionTermTextBeforeDelete == '' ) || (expressionTermTextBeforeDelete == selectedExpressionTermText && expressionTermText == '')) {
                         $this.remove();
                         placeCursorAtEnd();
-                        // TODO clearExpressionResults();
                         selectedExpressionTermText = '';
                     }
                     expressionTermTextBeforeDelete = '';
@@ -548,7 +582,7 @@
                     if (!(e.ctrlKey || e.metaKey || e.shiftKey)) { // not CTRL, CMD, SHIFT
                         $this.parent().find('.expression-term').removeClass('selected editing');
                     } else if (e.shiftKey) { // SHIFT
-                        var $expressionTerm = $currentCorticalIOExpression.find('.expression-field').find('.expression-term');
+                        var $expressionTerm = $currentRetinaExpression.find('.expression-field').find('.expression-term');
                         var thisIndex = $expressionTerm.index($this);
                         var lastSelectedIndex = $expressionTerm.index(lastSelectedExpressionTerm);
                         $expressionTerm.filter(function (index) {
@@ -579,14 +613,7 @@
                         range.select();
                     }
                     selectedExpressionTermText = $(this).text();
-                } else if ($this.hasClass('editing')) {
                 }
-            }).on('click', '.expression-history li, .expression-examples li', function (e) {
-                $currentRetinaExpression = $(this).parent().parent().parent();
-                $currentRetinaExpression.find('.expression-field').html($(this).html());
-                addTermIfNeeded();
-                placeCursorAtEnd();
-                // TODO fetchExpressionResults();
             }).on('click', $element, function (e) {
                 // TODO
             }).on('click', function (e) {
@@ -611,28 +638,31 @@
         /**
          * Create a fingerprint canvas
          * @param $element
+         * @param options
          */
-        function fingerprintCanvas($element) {
+        function fingerprintCanvas($element, options) {
             // TODO
         }
 
         /**
          * Attach the expression editor function to the jQuery object prototype
+         * @param options
          */
-        $.fn.expressionEditor = function () {
+        $.fn.expressionEditor = function(options) {
             if (this.is("div")) {
-                expressionEditor(this);
+                expressionEditor(this, options);
             } else {
                 throw "expressionEditor() is only applicable to DIV elements";
             }
         };
 
         /**
-         * Attach the fingerprint canvas function to the jQuery object prototype
+         * Attach the expression editor function to the jQuery object prototype
+         * @param options
          */
-        $.fn.fingerprintCanvas = function () {
+        $.fn.fingerprintCanvas = function(options) {
             if (this.is("div")) {
-                fingerprintCanvas(this);
+                fingerprintCanvas(this, options);
             } else {
                 throw "fingerprintCanvas() is only applicable to DIV elements";
             }
