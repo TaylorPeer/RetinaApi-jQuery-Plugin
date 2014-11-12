@@ -1,73 +1,43 @@
 (function ($) {
 
-    $.retinaElements = (function () {
+    $.fn.expressionBuilder = function (options) {
 
         /**
-         * Load external stylesheet and append to the current document
+         * Collection of key code aliases
          */
-        $(function () {
-            $('head').append('<link rel="stylesheet" href="css/retina-styles.css" type="text/css" />');
-        });
+        var KEYSTROKES = {
+            'BACKSPACE': 8,
+            'TAB': 9,
+            'ENTER': 13,
+            'SPACE': 32,
+            'LEFT_ARROW': 37,
+            'UP_ARROW': 38,
+            'RIGHT_ARROW': 39,
+            'DOWN_ARROW': 40,
+            'DELETE': 46
+        };
 
         /**
          * Create an expression editor text field out of a DOM element
          * @param $element
          * @param options
          */
-        function expressionEditor($element, options) {
+        function createExpressionBuilder($element, options) {
 
-            /**
-             * Maximum length of a retina term in characters
-             * @type {number}
-             */
-            var TERM_CHAR_LIMIT = 30;
-
-            /**
-             * Collection of operators used in Retina expressions
-             */
-            var OPERATORS = {
-                '+': 'AND',
-                '|': 'OR',
-                '!': 'NOT',
-                '-': 'SUB',
-                '^': 'XOR'
-            };
-
-            /**
-             * Collection of key code aliases
-             */
-            var KEYSTROKES = {
-                'BACKSPACE': 8,
-                'TAB': 9,
-                'ENTER': 13,
-                'SPACE': 32,
-                'LEFT_ARROW': 37,
-                'UP_ARROW': 38,
-                'RIGHT_ARROW': 39,
-                'DOWN_ARROW': 40,
-                'DELETE': 46
-            };
+            options = $.extend({}, $.fn.expressionBuilder.defaults, options);
 
             var expressionTermTextBeforeDelete = '';
             var selectedExpressionTermText = '';
             var lastSelectedExpressionTerm;
             var $currentRetinaExpression;
 
-            createExpressionEditor($element);
-
-            /**
-             * Create an expression editor out of a DOM element
-             * @param $element
-             */
-            function createExpressionEditor($element) {
-                $currentRetinaExpression = $element;
-                var contentToRender = '<div class="expression-field"></div><div class="expression-results"></div>';
-                $currentRetinaExpression.html(contentToRender);
-                addTermIfNeeded();
-                $currentRetinaExpression = $element.first();
-                placeCursorAtEnd();
-                enableSortable();
-            }
+            $currentRetinaExpression = $element;
+            var contentToRender = '<div class="expression-field"></div><div class="expression-results"></div>';
+            $currentRetinaExpression.html(contentToRender);
+            addTermIfNeeded();
+            $currentRetinaExpression = $element.first();
+            placeCursorAtEnd();
+            enableSortable();
 
             /**
              * Executes provided onEnterPress function when the enter key is pressed when the element has focus
@@ -289,7 +259,7 @@
                 var termText = $el.text();
                 var isOperator = false;
 
-                $.each(OPERATORS, function (key, value) {
+                $.each(options.operators, function (key, value) {
 
                     // If matches the word name of operator, add it as an operator
                     if (termText.toUpperCase() === value) {
@@ -498,7 +468,7 @@
                 var $this = $(this),
                     newTermText = $.trim($this.text());
                 verifyNewTermPlaceholderText();
-                $.each(OPERATORS, function (key, value) {
+                $.each(options.operators, function (key, value) {
                     if (newTermText === key) {
                         var eventToTrigger = $.Event('keydown');
                         eventToTrigger.which = KEYSTROKES.TAB; // TAB
@@ -508,8 +478,8 @@
                     }
                 });
 
-                if (newTermText.length > TERM_CHAR_LIMIT) {
-                    $this.text(newTermText.substr(0, TERM_CHAR_LIMIT));
+                if (newTermText.length > options.termCharacterLimit) {
+                    $this.text(newTermText.substr(0, options.termCharacterLimit));
                     placeCursorAtEnd();
                 }
 
@@ -544,8 +514,8 @@
                     }
                     expressionTermTextBeforeDelete = '';
                 }
-                if (expressionTermText.length > TERM_CHAR_LIMIT) {
-                    $this.text(expressionTermText.substr(0, TERM_CHAR_LIMIT));
+                if (expressionTermText.length > options.termCharacterLimit) {
+                    $this.text(expressionTermText.substr(0, options.termCharacterLimit));
                     placeCursorAtEnd($this);
                 }
 
@@ -629,39 +599,29 @@
             })
         }
 
-        /**
-         * Create a fingerprint canvas
-         * @param $element
-         * @param options
-         */
-        function fingerprintCanvas($element, options) {
-            // TODO
-        }
-
-        /**
-         * Attach the expression editor function to the jQuery object prototype
-         * @param options
-         */
-        $.fn.expressionEditor = function (options) {
-            if (this.is("div")) {
-                expressionEditor(this, options);
+        return this.each(function () {
+            if (!$(this).is("div")) {
+                throw "expressionBuilder is only applicable to DIV elements";
             } else {
-                throw "expressionEditor() is only applicable to DIV elements";
+                createExpressionBuilder($(this), options);
             }
-        };
+        });
+    };
 
-        /**
-         * Attach the expression editor function to the jQuery object prototype
-         * @param options
-         */
-        $.fn.fingerprintCanvas = function (options) {
-            if (this.is("div")) {
-                fingerprintCanvas(this, options);
-            } else {
-                throw "fingerprintCanvas() is only applicable to DIV elements";
-            }
-        };
+    /**
+     * Collection of default plugin options
+     */
+    $.fn.expressionBuilder.defaults = {
+        termCharacterLimit: 30,
+        operators: {
+            '+': 'AND',
+            '|': 'OR',
+            '!': 'NOT',
+            '-': 'SUB',
+            '^': 'XOR'
+        },
+        onEnterPress: $.noop,
+        onChange: $.noop
+    };
 
-    }());
-
-}(jQuery));
+})(jQuery);
