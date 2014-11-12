@@ -1,8 +1,5 @@
 (function ($) {
 
-    /**
-     * Append plugin to jQuery object
-     */
     $.retinaElements = (function () {
 
         /**
@@ -63,16 +60,13 @@
              * @param $element
              */
             function createExpressionEditor($element) {
-
                 $currentRetinaExpression = $element;
                 var contentToRender = '<div class="expression-field"></div><div class="expression-results"></div>';
                 $currentRetinaExpression.html(contentToRender);
-
                 addTermIfNeeded();
                 $currentRetinaExpression = $element.first();
                 placeCursorAtEnd();
-
-                sortableEnable();
+                enableSortable();
             }
 
             /**
@@ -114,7 +108,6 @@
             function placeCursorAtEnd($elements) {
 
                 if (typeof $elements === "undefined") {
-
                     $elements = $currentRetinaExpression.find('.new-term');
 
                     // remove any selections
@@ -192,9 +185,10 @@
             }
 
             /**
-             * TODO
+             * Checks the text of new terms
              */
-            function ensureNewTermPlaceholderTextCorrect() {
+            function verifyNewTermPlaceholderText() {
+
                 $element.find('.expression-field').each(function () {
                     var $this = $(this);
                     var $span = $this.find('span');
@@ -215,21 +209,22 @@
                         addTermIfNeeded();
                     }
                 });
+
             }
 
             /**
-             * TODO
+             * Enables sorting within the expression editor field
              */
-            function sortableEnable() {
+            function enableSortable() {
+
                 $element.find('.expression-field').sortable({
                     placeholder: "ui-state-highlight",
                     cursor: "move",
                     CustomBeforeStart: function (e, ui) {
                         $('.new-term, .btw-term').remove();
-                        // have to set the cursor since we'll be cloning elements
                         $element.find('.expression-field').sortable("option", "cursorAt", { left: ui.item.outerWidth() / 2, top: ui.item.outerHeight() / 2 });
                     },
-                    items: ".expression-term", // specifically exclude new-terms and btw-terms
+                    items: ".expression-term",
                     start: function (event, ui) {
                         ui.placeholder.addClass(ui.helper.attr('class')).removeClass('selected').html('&nbsp;').outerWidth(ui.item.outerWidth());
                         ui.item.parent().blur();
@@ -237,7 +232,7 @@
                     tolerance: "pointer",
                     helper: function (event, item) {
 
-                        // make sure at least one item is selected
+                        // Make sure at least one item is selected
                         if (!item.hasClass("selected")) {
                             item.addClass("selected").siblings().removeClass("selected");
                         }
@@ -246,8 +241,6 @@
                         var $selected = item.parent().children(".selected");
                         var $cloned = $selected.clone();
                         $helper.find("helper-container").append($cloned);
-
-                        // hide it, don't remove!
                         $selected.hide();
 
                         // save the selected items
@@ -277,12 +270,13 @@
                     },
                     disabled: false
                 }).disableSelection();
+
             }
 
             /**
              * Disables sorting within the expression editor field
              */
-            function sortableDisable() {
+            function disableSortable() {
                 $element.find('.expression-field').sortable("disable");
             }
 
@@ -422,7 +416,7 @@
                             enterPressed();
                         }
 
-                        if (notInTheLastPosition) { // if ENTER/TAB and in the middle
+                        if (notInTheLastPosition) {
                             if (e.which == KEYSTROKES.TAB) {
                                 expressionChanged();
                             }
@@ -476,7 +470,8 @@
                     if (newTermText == '') {
                         var newTermIndex = $span.index($this);
                         if (e.which == KEYSTROKES.LEFT_ARROW) {
-                            if (newTermIndex != 0) { // prevent going left if at the first item
+                            // Prevent going left if at the first item
+                            if (newTermIndex != 0) {
                                 if (e.shiftKey) {
                                     e.stopPropagation();
                                     $($span.get(newTermIndex - 1)).trigger('click');
@@ -502,8 +497,8 @@
 
                 var $this = $(this),
                     newTermText = $.trim($this.text());
-                ensureNewTermPlaceholderTextCorrect();
-                $.each(OPERATORS, function (key, value) { // keyboard shortcut checker
+                verifyNewTermPlaceholderText();
+                $.each(OPERATORS, function (key, value) {
                     if (newTermText === key) {
                         var eventToTrigger = $.Event('keydown');
                         eventToTrigger.which = KEYSTROKES.TAB; // TAB
@@ -562,7 +557,6 @@
                 $currentRetinaExpression = $(this).parent().parent();
                 $currentRetinaExpression.find('.new-term').remove();
                 $(this).removeClass('btw-term').addClass('new-term');
-                var $span = $currentRetinaExpression.find('.expression-field').find('span');
 
                 // Check if term is being added at the end of the expression or somewhere in the middle
                 var notInTheLastPosition = !isLastPosition($(this), $currentRetinaExpression.find('.expression-field').find('span'));
@@ -597,7 +591,7 @@
                     lastSelectedExpressionTerm = $this;
                     $('.new-term').blur();
                 } else if ($this.hasClass('selected')) {
-                    sortableDisable();
+                    disableSortable();
                     $this.removeClass('selected').addClass('editing').attr('contenteditable', 'true');
                     // select all text inside clicked element
                     var range, selection;
@@ -618,8 +612,8 @@
                 // TODO
             }).on('click', function (e) {
 
-                $element.find('.expression-term').removeClass('selected editing').removeAttr('contenteditable').blur(); // if there is a click anywhere
-                sortableEnable();
+                $element.find('.expression-term').removeClass('selected editing').removeAttr('contenteditable').blur();
+                enableSortable();
                 var $span = $currentRetinaExpression.find('.expression-field').find('span');
                 var $newTerm = $currentRetinaExpression.find('.new-term');
 
@@ -648,7 +642,7 @@
          * Attach the expression editor function to the jQuery object prototype
          * @param options
          */
-        $.fn.expressionEditor = function(options) {
+        $.fn.expressionEditor = function (options) {
             if (this.is("div")) {
                 expressionEditor(this, options);
             } else {
@@ -660,7 +654,7 @@
          * Attach the expression editor function to the jQuery object prototype
          * @param options
          */
-        $.fn.fingerprintCanvas = function(options) {
+        $.fn.fingerprintCanvas = function (options) {
             if (this.is("div")) {
                 fingerprintCanvas(this, options);
             } else {
