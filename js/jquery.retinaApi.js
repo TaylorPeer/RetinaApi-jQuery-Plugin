@@ -1,14 +1,6 @@
 (function ($) {
 
-    /**
-     * Append the Retina API to the jQuery object
-     */
     $.retinaApi = (function () {
-
-        /**
-         * Base path of the API endpoint
-         */
-        var basePath = "http://54.78.205.206/rest/";
 
         /**
          * Ensures default options are used for REST calls if no options were specified
@@ -31,7 +23,7 @@
             }
 
             return options;
-        };
+        }
 
         /**
          * Returns a list of URL parameters to append to API requests constructed from the options object
@@ -40,41 +32,32 @@
          */
         function getUrlParameters(options) {
 
-            var params = {};
+            this.parameters = {};
 
-            if (typeof options.contextId != "undefined") {
-                params.context_id = options.contextId;
-            }
+            this.availableParameters = {
+                contextId: "context_id",
+                getFingerprint: "get_fingerprint",
+                imageEncoding: "image_encoding",
+                imageScalar: "image_scalar",
+                maxResults: "max_results",
+                plotShape: "plot_shape",
+                posType: "pos_type",
+                retinaName: "retina_name",
+                sparsity: "sparsity",
+                startIndex: "start_index",
+                term: "term"
+            };
 
-            if (typeof options.getFingerprint != "undefined") {
-                params.get_fingerprint = options.getFingerprint;
-            }
+            var that = this;
 
-            if (typeof options.maxResults != "undefined") {
-                params.max_results = options.maxResults;
-            }
+            // Check if options contains any of the available parameters
+            $.each(Object.keys(this.availableParameters), function (index, parameter) {
+                if (typeof options[parameter] != "undefined") {
+                    that.parameters[that.availableParameters[parameter]] = options[parameter];
+                }
+            });
 
-            if (typeof options.posType != "undefined") {
-                params.pos_type = options.posType;
-            }
-
-            if (typeof options.retinaName != "undefined") {
-                params.retina_name = options.retinaName;
-            }
-
-            if (typeof options.sparsity != "undefined") {
-                params.sparsity = options.sparsity;
-            }
-
-            if (typeof options.startIndex != "undefined") {
-                params.start_index = options.startIndex;
-            }
-
-            if (typeof options.term != "undefined") {
-                params.term = options.term;
-            }
-
-            return $.param(params);
+            return $.param(this.parameters);
         }
 
         /**
@@ -105,12 +88,11 @@
          */
         function sendRequest(url, type, data, options) {
 
-            var params = getUrlParameters(options);
-
-            url = basePath + url;
-
-            if (params.length) {
-                url = [url, params].join('?');
+            // Construct request URL
+            url = options.basePath + url;
+            var parameters = getUrlParameters(options);
+            if (parameters.length) {
+                url = [url, parameters].join('?');
             }
 
             $.ajax({
@@ -148,13 +130,17 @@
              */
             defaultOptions: {
                 apiKey: "",
+                basePath: "http://api.cortical.io/rest/",
                 beforeSend: $.noop,
                 callback: $.noop,
                 contextId: undefined,
                 data: undefined,
                 errorHandler: $.noop,
                 getFingerprint: undefined,
+                imageEncoding: undefined,
+                imageScalar: undefined,
                 maxResults: undefined,
+                plotShape: undefined,
                 posType: undefined,
                 retinaName: undefined,
                 sparsity: undefined,
@@ -215,16 +201,30 @@
                 get('terms/similar_terms', options);
             },
 
-            // TODO /text
+            /**
+             * TODO
+             * @param options
+             * @param callback
+             */
+            processText: function (options, callback) {
+                options = prepareOptions(options, callback);
+                post('text', options.data, options);
+            },
+
             // TODO /text/keywords
             // TODO /text/tokenize
             // TODO /text/slices
             // TODO /text/bulk
 
+            /**
+             * TODO
+             * @param options
+             * @param callback
+             */
             processExpression: function (options, callback) {
                 options = prepareOptions(options, callback);
                 post('expressions', options.data, options);
-            }
+            },
 
             // TODO /expressions/contexts
             // TODO /expressions/similar_terms
@@ -234,9 +234,27 @@
 
             // TODO /compare
 
-            // TODO /image
+            /**
+             * TODO
+             * @param options
+             * @param callback
+             */
+            getImage: function (options, callback) {
+                options = prepareOptions(options, callback);
+                post('image', options.data, options);
+            },
+
             // TODO /image/compare
-            // TODO /image/bulk
+
+            /**
+             * TODO
+             * @param options
+             * @param callback
+             */
+            getImageBulk: function (options, callback) {
+                options = prepareOptions(options, callback);
+                post('image/bulk', options.data, options);
+            }
 
         };
 
