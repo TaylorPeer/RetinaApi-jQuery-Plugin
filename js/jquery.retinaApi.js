@@ -16,7 +16,7 @@
             }
 
             // Add all default options
-            options = $.extend({}, $.retinaApi.defaultOptions, options);
+            options = $.extend({}, $.retinaApi.defaults, options);
 
             if ($.isFunction(callback)) {
                 options.callback = callback;
@@ -128,7 +128,7 @@
             /**
              * Standard options
              */
-            defaultOptions: {
+            defaults: {
                 apiKey: "",
                 basePath: "http://api.cortical.io/rest/",
                 beforeSend: $.noop,
@@ -232,7 +232,15 @@
             // TODO /expressions/contexts/bulk
             // TODO /expressions/similar_terms/bulk
 
-            // TODO /compare
+            /**
+             * TODO
+             * @param options
+             * @param callback
+             */
+            compare: function (options, callback) {
+                options = prepareOptions(options, callback);
+                post('compare', options.data, options);
+            },
 
             /**
              * TODO
