@@ -6,11 +6,10 @@
          * Ensures default options are used for REST calls if no options were specified
          * @param options
          * @param callback
-         * @returns {void|n.extend|*}
          */
         function prepareOptions(options, callback) {
 
-            // Checks if options is actually the callback function (for the case that no options were specified)
+            // Checks if options variable is actually the callback function (for the case that no options were specified)
             if ($.isFunction(options)) {
                 options = {callback: options};
             }
@@ -26,37 +25,52 @@
         }
 
         /**
-         * Returns a list of URL parameters to append to API requests constructed from the options object
+         * Checks that a API call has all required parameters configured
+         * @param call
          * @param options
-         * @returns {*}
+         * @param required
          */
-        function getUrlParameters(options) {
-
-            this.parameters = {};
-
-            this.availableParameters = {
-                contextId: "context_id",
-                getFingerprint: "get_fingerprint",
-                imageEncoding: "image_encoding",
-                imageScalar: "image_scalar",
-                maxResults: "max_results",
-                plotShape: "plot_shape",
-                posType: "pos_type",
-                retinaName: "retina_name",
-                sparsity: "sparsity",
-                startIndex: "start_index",
-                term: "term"
-            };
-
-            var that = this;
-
-            // Check if options contains any of the available parameters
-            $.each(Object.keys(this.availableParameters), function (index, parameter) {
-                if (typeof options[parameter] != "undefined") {
-                    that.parameters[that.availableParameters[parameter]] = options[parameter];
+        function checkForRequiredParameters(call, options, required) {
+            var missingParameters = [];
+            $.each(required, function (index, value) {
+                if (typeof options[getKeyFromValue($.retinaApi.parameters, value)] === "undefined") {
+                    var missingParameterOptionName = getKeyFromValue($.retinaApi.parameters, value);
+                    missingParameters.push(missingParameterOptionName);
                 }
             });
+            if (missingParameters.length > 0) {
+                throw "Call to '" + call + "' is missing the following required parameters: options." + missingParameters.join(", ");
+            }
+        }
 
+        /**
+         * Returns a key from a collection based on its value
+         * @param object
+         * @param value
+         * @returns {string}
+         */
+        function getKeyFromValue(object, value) {
+            for (var prop in object) {
+                if (object.hasOwnProperty(prop)) {
+                    if (object[ prop ] === value) {
+                        return prop;
+                    }
+                }
+            }
+        }
+
+        /**
+         * Returns a list of URL parameters to append to API requests constructed from the options object
+         * @param options
+         */
+        function getUrlParameters(options) {
+            var that = this;
+            this.parameters = {};
+            $.each(Object.keys($.retinaApi.parameters), function (index, parameter) {
+                if (typeof options[parameter] != "undefined") {
+                    that.parameters[$.retinaApi.parameters[parameter]] = options[parameter];
+                }
+            });
             return $.param(this.parameters);
         }
 
@@ -109,6 +123,7 @@
                 error: options.errorHandler
             }).then(function (data) {
 
+                // Ensure the response contained data
                 if (!data) {
                     options.callback(false, $.retinaApi.errors.NoDataError);
                     return;
@@ -117,7 +132,11 @@
                 try {
                     options.callback(data);
                 } catch (e) {
-                    options.callback(false, new $.retinaApi.errors.InvalidJSON(e));
+                    if (typeof options.callback == "undefined") {
+                        throw "No callback defined to handle returned data: \n" + data;
+                    } else {
+                        options.callback(false, new $.retinaApi.errors.InvalidJSON(e));
+                    }
                 }
 
             });
@@ -162,12 +181,30 @@
             },
 
             /**
+             * Call parameters
+             */
+            parameters: {
+                contextId: "context_id",
+                getFingerprint: "get_fingerprint",
+                imageEncoding: "image_encoding",
+                imageScalar: "image_scalar",
+                maxResults: "max_results",
+                plotShape: "plot_shape",
+                posType: "pos_type",
+                retinaName: "retina_name",
+                sparsity: "sparsity",
+                startIndex: "start_index",
+                term: "term"
+            },
+
+            /**
              * Returns a collection of available retinas or a specific retina if the parameter options.retinaName is set
              * @param options
              * @param callback
              */
             getRetinas: function (options, callback) {
                 options = prepareOptions(options, callback);
+                // TODO checkForRequiredParameters
                 get('retinas', options);
             },
 
@@ -178,6 +215,7 @@
              */
             getTerms: function (options, callback) {
                 options = prepareOptions(options, callback);
+                // TODO checkForRequiredParameters
                 get('terms', options);
             },
 
@@ -188,6 +226,7 @@
              */
             getTermContexts: function (options, callback) {
                 options = prepareOptions(options, callback);
+                // TODO checkForRequiredParameters
                 get('terms/contexts', options);
             },
 
@@ -198,6 +237,7 @@
              */
             getTermSimilarTerms: function (options, callback) {
                 options = prepareOptions(options, callback);
+                // TODO checkForRequiredParameters
                 get('terms/similar_terms', options);
             },
 
@@ -208,6 +248,7 @@
              */
             processText: function (options, callback) {
                 options = prepareOptions(options, callback);
+                // TODO checkForRequiredParameters
                 post('text', options.data, options);
             },
 
@@ -223,6 +264,7 @@
              */
             processExpression: function (options, callback) {
                 options = prepareOptions(options, callback);
+                // TODO checkForRequiredParameters
                 post('expressions', options.data, options);
             },
 
@@ -233,13 +275,15 @@
             // TODO /expressions/similar_terms/bulk
 
             /**
-             * TODO
+             * Makes a comparison between two elements and returns a representation of similarity
              * @param options
              * @param callback
              */
             compare: function (options, callback) {
+                var path = 'compare';
                 options = prepareOptions(options, callback);
-                post('compare', options.data, options);
+                checkForRequiredParameters(path, options, [$.retinaApi.parameters.retinaName]);
+                post(path, options.data, options);
             },
 
             /**
@@ -249,6 +293,7 @@
              */
             getImage: function (options, callback) {
                 options = prepareOptions(options, callback);
+                // TODO checkForRequiredParameters
                 post('image', options.data, options);
             },
 
@@ -261,6 +306,7 @@
              */
             getImageBulk: function (options, callback) {
                 options = prepareOptions(options, callback);
+                // TODO checkForRequiredParameters
                 post('image/bulk', options.data, options);
             }
 
