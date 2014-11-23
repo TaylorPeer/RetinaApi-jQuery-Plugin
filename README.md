@@ -6,4 +6,4 @@ This is an alpha version of a minimal HTTP client library for the [cortical.io A
 
 ## cortical.io API key
 
-[Get a free cortical.io API key here](http://www.cortical.io/developers_apikey.html). 
+[Get a free cortical.io API key here](http://www.cortical.io/developers_apikey.html).

@@ -26,11 +26,11 @@
 
         /**
          * Checks that a API call has all required parameters configured
-         * @param call
+         * @param callDescriptor
          * @param options
          * @param required
          */
-        function checkForRequiredParameters(call, options, required) {
+        function checkForRequiredParameters(callDescriptor, options, required) {
             var missingParameters = [];
             $.each(required, function (index, value) {
                 if (typeof options[getKeyFromValue($.retinaApi.parameters, value)] === "undefined") {
@@ -39,7 +39,7 @@
                 }
             });
             if (missingParameters.length > 0) {
-                throw "Call to '" + call + "' is missing the following required parameters: options." + missingParameters.join(", ");
+                throw "Call to '" + callDescriptor + "' is missing the following required parameters: options." + missingParameters.join(", options.");
             }
         }
 
@@ -52,7 +52,7 @@
         function getKeyFromValue(object, value) {
             for (var prop in object) {
                 if (object.hasOwnProperty(prop)) {
-                    if (object[ prop ] === value) {
+                    if (object[prop] === value) {
                         return prop;
                     }
                 }
@@ -64,11 +64,26 @@
          * @param options
          */
         function getUrlParameters(options) {
-            var that = this;
+
             this.parameters = {};
-            $.each(Object.keys($.retinaApi.parameters), function (index, parameter) {
+            this.possibleUrlParameters = {
+                contextId: "context_id",
+                getFingerprint: "get_fingerprint",
+                imageEncoding: "image_encoding",
+                imageScalar: "image_scalar",
+                maxResults: "max_results",
+                plotShape: "plot_shape",
+                posType: "pos_type",
+                retinaName: "retina_name",
+                sparsity: "sparsity",
+                startIndex: "start_index",
+                term: "term"
+            };
+            var that = this;
+
+            $.each(Object.keys(that.possibleUrlParameters), function (index, parameter) {
                 if (typeof options[parameter] != "undefined") {
-                    that.parameters[$.retinaApi.parameters[parameter]] = options[parameter];
+                    that.parameters[that.possibleUrlParameters[parameter]] = options[parameter];
                 }
             });
             return $.param(this.parameters);
@@ -153,7 +168,6 @@
                 beforeSend: $.noop,
                 callback: $.noop,
                 contextId: undefined,
-                data: undefined,
                 errorHandler: $.noop,
                 getFingerprint: undefined,
                 imageEncoding: undefined,
@@ -164,6 +178,7 @@
                 retinaName: undefined,
                 sparsity: undefined,
                 term: undefined,
+                text: undefined,
                 startIndex: undefined
             },
 
@@ -194,120 +209,201 @@
                 retinaName: "retina_name",
                 sparsity: "sparsity",
                 startIndex: "start_index",
-                term: "term"
+                term: "term",
+                text: "text"
             },
 
             /**
-             * Returns a collection of available retinas or a specific retina if the parameter options.retinaName is set
-             * @param options
-             * @param callback
+             * Retinas API
              */
-            getRetinas: function (options, callback) {
-                options = prepareOptions(options, callback);
-                // TODO checkForRequiredParameters
-                get('retinas', options);
+            retinas: {
+
+                /**
+                 * If no value is chosen for the retinaName option, this method returns an overview of all available retinas.
+                 * If a specific retina is chosen, then only information about that retina is returned.
+                 * @param options
+                 * @param callback
+                 */
+                getRetinas: function (options, callback) {
+                    options = prepareOptions(options, callback);
+                    get('retinas', options);
+                }
+
             },
 
             /**
-             * TODO
-             * @param options
-             * @param callback
+             * Terms API
              */
-            getTerms: function (options, callback) {
-                options = prepareOptions(options, callback);
-                // TODO checkForRequiredParameters
-                get('terms', options);
+            terms: {
+
+                /**
+                 * When the term option for this endpoint is not specified, a listing of all terms in the retina will be
+                 * returned. Otherwise this endpoint returns a term object with meta-data for an exact match, or a list
+                 * of potential retina terms if the string contains one or more of the wildcard characters, '*' and '?'.
+                 *
+                 * The wildcard characters must be initially preceded by at least 3 characters.
+                 * - The asterisk wildcard, '*', represents zero or more characters.
+                 * - The question mark wildcard, '?', represents exactly one character.
+                 *
+                 * If the startIndex option for this method is not specified, the default of 0 will be assumed.
+                 * If the maxResults option for this method is not specified, the default of 10 will be assumed.
+                 *
+                 * For this method the maximum number of results per page is limited to 1000.
+                 * @param options
+                 * @param callback
+                 */
+                getTerm: function (options, callback) {
+                    options = prepareOptions(options, callback);
+                    checkForRequiredParameters("getTerm", options, [$.retinaApi.parameters.retinaName]);
+                    get('terms', options);
+                },
+
+                /**
+                 * Returns a listing of all the contexts of this term.
+                 *
+                 * If the startIndex option for this method is not specified, the default of 0 will be assumed.
+                 * If the maxResults option for this method is not specified, then the default value of 5 will be assumed.
+                 *
+                 * Each term can have as many different contexts as semantic meanings.
+                 * @param options
+                 * @param callback
+                 */
+                getContextsForTerm: function (options, callback) {
+                    options = prepareOptions(options, callback);
+                    checkForRequiredParameters("getContextsForTerm", options, [$.retinaApi.parameters.retinaName, $.retinaApi.parameters.term]);
+                    get('terms/contexts', options);
+                },
+
+                /**
+                 * This method returns a listing of similar terms for the specified input term.
+                 *
+                 * If any valid contextId is specified the method returns similar terms for the term in this specific context.
+                 *
+                 * If the startIndex option for this method is not specified, the default of 0 will be assumed.
+                 *
+                 * If the maxResults option for this method is not specified, then the default value of 10 will be assumed.
+                 * For this method the maximum number of results per page is limited to 10.
+                 *
+                 * If the contextId parameter is not specified, this method returns a list of similar terms over all contexts.
+                 *
+                 * The posType option enables filtering of the results by parts of speech (one of: NOUN, VERB, ADJECTIVE).
+                 * If this option is unspecified, no filtering will occur.
+                 * @param options
+                 * @param callback
+                 */
+                getSimilarTerms: function (options, callback) {
+                    options = prepareOptions(options, callback);
+                    checkForRequiredParameters("getSimilarTerms", options, [$.retinaApi.parameters.retinaName, $.retinaApi.parameters.term]);
+                    get('terms/similar_terms', options);
+                }
+
             },
 
             /**
-             * TODO
-             * @param options
-             * @param callback
+             * Text API
              */
-            getTermContexts: function (options, callback) {
-                options = prepareOptions(options, callback);
-                // TODO checkForRequiredParameters
-                get('terms/contexts', options);
+            text: {
+
+                /**
+                 * Returns a retina representation (a Fingerprint) of the input text.
+                 * @param options
+                 * @param callback
+                 */
+                getRepresentationForText: function (options, callback) {
+                    options = prepareOptions(options, callback);
+                    checkForRequiredParameters("getRepresentationForText", options, [$.retinaApi.parameters.retinaName, $.retinaApi.parameters.text]);
+                    post('text', options.text, options);
+                },
+
+                /**
+                 * Returns a list of keywords from the input text.
+                 * @param options
+                 * @param callback
+                 */
+                getKeywordsForText: function (options, callback) {
+                    options = prepareOptions(options, callback);
+                    checkForRequiredParameters("getKeywordsForText", options, [$.retinaApi.parameters.retinaName, $.retinaApi.parameters.text]);
+                    post('text', options.text, options);
+                }
+
+                // TODO /text/tokenize
+                // TODO /text/slices
+                // TODO /text/bulk
+
             },
 
             /**
-             * TODO
-             * @param options
-             * @param callback
+             * Expressions API
              */
-            getTermSimilarTerms: function (options, callback) {
-                options = prepareOptions(options, callback);
-                // TODO checkForRequiredParameters
-                get('terms/similar_terms', options);
+            expressions: {
+
+                /**
+                 * TODO
+                 * @param options
+                 * @param callback
+                 */
+                processExpression: function (options, callback) {
+                    options = prepareOptions(options, callback);
+                    // TODO checkForRequiredParameters
+                    post('expressions', options.data, options);
+                }
+
+                // TODO /expressions/contexts
+                // TODO /expressions/similar_terms
+                // TODO /expressions/bulk
+                // TODO /expressions/contexts/bulk
+                // TODO /expressions/similar_terms/bulk
+
             },
 
             /**
-             * TODO
-             * @param options
-             * @param callback
+             * Compare API
              */
-            processText: function (options, callback) {
-                options = prepareOptions(options, callback);
-                // TODO checkForRequiredParameters
-                post('text', options.data, options);
-            },
+            compare: {
 
-            // TODO /text/keywords
-            // TODO /text/tokenize
-            // TODO /text/slices
-            // TODO /text/bulk
+                /**
+                 * This method enables a comparison between two elements and returns a representation of similarity.
+                 * @param options
+                 * @param callback
+                 */
+                compare: function (options, callback) {
+                    var path = 'compare';
+                    options = prepareOptions(options, callback);
+                    checkForRequiredParameters(path, options, [$.retinaApi.parameters.retinaName]);
+                    post(path, options.data, options);
+                }
 
-            /**
-             * TODO
-             * @param options
-             * @param callback
-             */
-            processExpression: function (options, callback) {
-                options = prepareOptions(options, callback);
-                // TODO checkForRequiredParameters
-                post('expressions', options.data, options);
-            },
-
-            // TODO /expressions/contexts
-            // TODO /expressions/similar_terms
-            // TODO /expressions/bulk
-            // TODO /expressions/contexts/bulk
-            // TODO /expressions/similar_terms/bulk
-
-            /**
-             * Makes a comparison between two elements and returns a representation of similarity
-             * @param options
-             * @param callback
-             */
-            compare: function (options, callback) {
-                var path = 'compare';
-                options = prepareOptions(options, callback);
-                checkForRequiredParameters(path, options, [$.retinaApi.parameters.retinaName]);
-                post(path, options.data, options);
             },
 
             /**
-             * TODO
-             * @param options
-             * @param callback
+             * Image API
              */
-            getImage: function (options, callback) {
-                options = prepareOptions(options, callback);
-                // TODO checkForRequiredParameters
-                post('image', options.data, options);
-            },
+            image: {
 
-            // TODO /image/compare
+                /**
+                 * TODO
+                 * @param options
+                 * @param callback
+                 */
+                getImage: function (options, callback) {
+                    options = prepareOptions(options, callback);
+                    // TODO checkForRequiredParameters
+                    post('image', options.data, options);
+                },
 
-            /**
-             * TODO
-             * @param options
-             * @param callback
-             */
-            getImageBulk: function (options, callback) {
-                options = prepareOptions(options, callback);
-                // TODO checkForRequiredParameters
-                post('image/bulk', options.data, options);
+                // TODO /image/compare
+
+                /**
+                 * TODO
+                 * @param options
+                 * @param callback
+                 */
+                getImageBulk: function (options, callback) {
+                    options = prepareOptions(options, callback);
+                    // TODO checkForRequiredParameters
+                    post('image/bulk', options.data, options);
+                }
+
             }
 
         };
