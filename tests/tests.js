@@ -5,44 +5,84 @@
 $.retinaApi.defaults.apiKey = apiKey;
 
 /**
- * Tests that retina information is returned
+ * Random retina name to be used as a parameter in tests
  */
-QUnit.asyncTest("getRetinasTest", function (assert) {
-    var callback = function (data) {
-        assert.ok(data.length > 0 && (typeof data[0].retinaName != "undefined"), "API returned Retinas");
-        QUnit.start();
-    };
-    $.retinaApi.retinas.getRetinas({}, callback);
-});
+var testRetinaName;
 
 /**
- * Tests that retina information is returned for a specific retina
+ * Term used as a parameter in tests
+ * @type {string}
  */
-QUnit.asyncTest("getRetina", function (assert) {
-    QUnit.stop();
-    var firstCallback = function (data) {
-        assert.ok(data.length > 0 && (typeof data[0].retinaName != "undefined"), "API returned Retinas");
-        QUnit.start();
+var testTerm = "test";
 
-        var firstRetinaName = data[0].retinaName;
-        var options = {retinaName: firstRetinaName};
+/**
+ * Callback to set the test retina name and then execute test cases
+ * @param data
+ */
+var callback = function (data) {
+    testRetinaName = data[0].retinaName;
+    runTests();
+};
+$.retinaApi.retinas.getRetinas({}, callback);
 
-        var secondCallback = function (data) {
-            assert.ok(data.length > 0 && (typeof data[0].retinaName != "undefined") && (data[0].retinaName == firstRetinaName), "API returned single Retina");
+function runTests() {
+
+    /**
+     * Tests that retina information is returned
+     */
+    QUnit.asyncTest("getRetinas", function (assert) {
+        var callback = function (data) {
+            assert.ok(data.length > 0 && (typeof data[0].retinaName != "undefined"), "Return all Retinas");
             QUnit.start();
         };
+        $.retinaApi.retinas.getRetinas({}, callback);
+    });
 
-        $.retinaApi.retinas.getRetinas(options, secondCallback);
-    };
-    $.retinaApi.retinas.getRetinas({}, firstCallback);
-});
+    /**
+     * Tests that retina information is returned for a specific retina
+     */
+    QUnit.asyncTest("getRetina", function (assert) {
+        var options = {retinaName: testRetinaName};
+        var callback = function (data) {
+            assert.ok(data.length > 0 && (typeof data[0].retinaName != "undefined") && (data[0].retinaName == testRetinaName), "Return single Retina");
+            QUnit.start();
+        };
+        $.retinaApi.retinas.getRetinas(options, callback);
+    });
 
-/**
- * Tests that getTerm throws an error if the retinaName option is not specified
- */
-QUnit.asyncTest("getTermWithoutOptionsTest", function (assert) {
-    assert.throws(function () {
+    /**
+     * Tests that getTerm throws an error if the retinaName option is not specified
+     */
+    QUnit.asyncTest("getTermWithoutOptions", function (assert) {
+        assert.throws(function () {
             $.retinaApi.terms.getTerm({}, $.noop);
-        }, "Call to 'getTerm' is missing the following required parameters: options.retinaName", "getTerm threw exception because retinaName was missing");
-    QUnit.start();
-});
+        }, "Call to 'getTerm' is missing the following required parameters: options.retinaName", "Throw exception due to missing retinaName");
+        QUnit.start();
+    });
+
+    /**
+     * Tests that getTerm returns terms
+     */
+    QUnit.asyncTest("getAllTerms", function (assert) {
+        var options = {retinaName: testRetinaName};
+        var callback = function (data) {
+            assert.ok(data.length > 0 && (typeof data[0].term != "undefined"), "Return some terms");
+            QUnit.start();
+        };
+        $.retinaApi.terms.getTerm(options, callback);
+    });
+
+    /**
+     * Tests that getTerm returns information about a specific term
+     */
+    QUnit.asyncTest("getValidTerm", function (assert) {
+        var options = {retinaName: testRetinaName, term: testTerm};
+        var callback = function (data) {
+            assert.ok(data.length > 0 && (typeof data[0].term != "undefined") && data[0].term == testTerm, "Return information about a specific term");
+            QUnit.start();
+        };
+        $.retinaApi.terms.getTerm(options, callback);
+    });
+
+}
+
