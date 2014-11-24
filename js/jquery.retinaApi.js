@@ -284,7 +284,7 @@
                  * If the maxResults option for this method is not specified, then the default value of 10 will be assumed.
                  * For this method the maximum number of results per page is limited to 10.
                  *
-                 * If the contextId parameter is not specified, this method returns a list of similar terms over all contexts.
+                 * If the contextId option is not specified, this method returns a list of similar terms over all contexts.
                  *
                  * The posType option enables filtering of the results by parts of speech (one of: NOUN, VERB, ADJECTIVE).
                  * If this option is unspecified, no filtering will occur.
