@@ -141,17 +141,10 @@
                 // Ensure the response contained data
                 if (!data) {
                     options.callback(false, $.retinaApi.errors.NoDataError);
-                    return;
-                }
-
-                try {
+                } else if (typeof options.callback == "undefined") {
+                    throw "No callback defined to handle returned data: \n" + data;
+                } else {
                     options.callback(data);
-                } catch (e) {
-                    if (typeof options.callback == "undefined") {
-                        throw "No callback defined to handle returned data: \n" + data;
-                    } else {
-                        options.callback(false, new $.retinaApi.errors.InvalidJSON(e));
-                    }
                 }
 
             });
