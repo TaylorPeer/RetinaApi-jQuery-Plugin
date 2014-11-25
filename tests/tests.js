@@ -406,6 +406,31 @@ function runTests() {
     });
 
     /**
+     * Tests that getSlicesForText throws an error if no options were configured
+     */
+    QUnit.asyncTest("testGetSlicesForTextWithoutOptions", function (assert) {
+        assert.expect(1);
+        assert.throws(function () {
+            $.retinaApi.text.getSlicesForText({}, $.noop);
+        }, "Call to 'getSlicesForText' is missing the following required parameters: options.retinaName, options.text", "Exception thrown due to missing options");
+        QUnit.start();
+    });
+
+    /**
+     * Tests that getSlicesForText returns slices for a given text
+     */
+    QUnit.asyncTest("testGetSlicesForTextValidText", function (assert) {
+        assert.expect(2);
+        var options = {retinaName: testRetinaName, text: testTexts[0]};
+        var callback = function (data) {
+            assert.ok(data.length > 0, "Slices were returned");
+            assert.notEqual(typeof data[0].fingerprint, "undefined", "Returned data contained a fingerprint");
+            QUnit.start();
+        };
+        $.retinaApi.text.getSlicesForText(options, callback);
+    });
+
+    /**
      * Tests that getRepresentationsForBulkText throws an error if no options were configured
      */
     QUnit.asyncTest("testGetRepresentationsForBulkTextWithoutOptions", function (assert) {
