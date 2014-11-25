@@ -88,6 +88,7 @@
                 imageScalar: "image_scalar",
                 maxResults: "max_results",
                 plotShape: "plot_shape",
+                posTags: "POStags",
                 posType: "pos_type",
                 retinaName: "retina_name",
                 sparsity: "sparsity",
@@ -182,6 +183,7 @@
                 maxResults: undefined,
                 plotShape: undefined,
                 posType: undefined,
+                posTags: undefined,
                 retinaName: undefined,
                 sparsity: undefined,
                 term: undefined,
@@ -207,6 +209,7 @@
                 imageScalar: "image_scalar",
                 maxResults: "max_results",
                 plotShape: "plot_shape",
+                posTags: "POStags",
                 posType: "pos_type",
                 retinaName: "retina_name",
                 sparsity: "sparsity",
@@ -334,8 +337,21 @@
                     post('text/keywords', options.text, options);
                 },
 
-                // TODO /text/tokenize
-                // TODO getTokensForText
+                /**
+                 * Given an input text this method returns a list of sentences (each of which is a comma-separated list of tokens).
+                 *
+                 * Part of speech tags can be given in a comma-separated list in the parameter options.posTags.
+                 * If the options.posTags parameter is left blank, terms of all types are retrieved, otherwise this method will return only the terms corresponding to the requested parts of speech.
+                 * The allowed tags are described in more detail on the GATE website (https://gate.ac.uk/sale/tao/splitap7.html#x39-789000G).
+                 *
+                 * @param options
+                 * @param callback
+                 */
+                getTokensForText: function (options, callback) {
+                    options = prepareOptions(options, callback);
+                    checkForRequiredParameters("getTokensForText", options, [$.retinaApi.parameters.retinaName, $.retinaApi.parameters.text]);
+                    post('text/tokenize', options.text, options);
+                },
 
                 // TODO /text/slices
                 // TODO getSlicesForText
