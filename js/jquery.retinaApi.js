@@ -3,7 +3,7 @@
     $.retinaApi = (function () {
 
         /**
-         * Ensures default options are used for REST calls if no options were specified
+         * Ensures default options are used for REST calls if no options were specified.
          * @param options
          * @param callback
          */
@@ -25,7 +25,7 @@
         }
 
         /**
-         * Checks that a API call has all required parameters configured
+         * Checks that a API call has all required parameters configured.
          * @param callDescriptor
          * @param options
          * @param required
@@ -44,7 +44,7 @@
         }
 
         /**
-         * Returns a key from a collection based on its value
+         * Returns a key from a collection based on its value.
          * @param object
          * @param value
          * @returns {string}
@@ -60,13 +60,28 @@
         }
 
         /**
-         * Returns a list of URL parameters to append to API requests constructed from the options object
+         * Converts an array of data into an array of JSON objects collection required by the API for bulk operations.
+         * @param data
+         * @param label
+         */
+        function convertArrayToBulk(data, label) {
+            var bulk = [];
+            $.each(data, function (index, entry) {
+                var object = {};
+                object[label] = entry;
+                bulk.push(object);
+            });
+            return bulk;
+        }
+
+        /**
+         * Returns a list of URL parameters to append to API requests constructed from the options object.
          * @param options
          */
         function getUrlParameters(options) {
 
             this.parameters = {};
-            this.possibleUrlParameters = {
+            this.optionsUrlParameters = {
                 contextId: "context_id",
                 getFingerprint: "get_fingerprint",
                 imageEncoding: "image_encoding",
@@ -81,16 +96,17 @@
             };
             var that = this;
 
-            $.each(Object.keys(that.possibleUrlParameters), function (index, parameter) {
+            // Check all possible option names if they are contained in the options object and return the corresponding URL parameters
+            $.each(Object.keys(that.optionsUrlParameters), function (index, parameter) {
                 if (typeof options[parameter] != "undefined") {
-                    that.parameters[that.possibleUrlParameters[parameter]] = options[parameter];
+                    that.parameters[that.optionsUrlParameters[parameter]] = options[parameter];
                 }
             });
             return $.param(this.parameters);
         }
 
         /**
-         * Makes a GET request
+         * Makes a GET request.
          * @param url
          * @param options
          */
@@ -99,7 +115,7 @@
         }
 
         /**
-         * Makes a POST request
+         * Makes a POST request.
          * @param url
          * @param data
          * @param options
@@ -109,7 +125,7 @@
         }
 
         /**
-         * Sends an API request
+         * Sends an API request.
          * @param url
          * @param type
          * @param data
@@ -151,7 +167,7 @@
         return {
 
             /**
-             * Standard options
+             * Default plugin options
              */
             defaults: {
                 apiKey: "",
@@ -170,6 +186,7 @@
                 sparsity: undefined,
                 term: undefined,
                 text: undefined,
+                texts: undefined,
                 startIndex: undefined
             },
 
@@ -177,7 +194,7 @@
              * API errors
              */
             errors: {
-                NoDataError: { type: 'NoDataError', message: "No data was supplied to the callback."}
+                NoDataError: {type: 'NoDataError', message: "No data was supplied to the callback"}
             },
 
             /**
@@ -195,7 +212,8 @@
                 sparsity: "sparsity",
                 startIndex: "start_index",
                 term: "term",
-                text: "text"
+                text: "text",
+                texts: "texts"
             },
 
             /**
@@ -205,7 +223,9 @@
 
                 /**
                  * If no value is chosen for the retinaName option, this method returns an overview of all available retinas.
+                 *
                  * If a specific retina is chosen, then only information about that retina is returned.
+                 *
                  * @param options
                  * @param callback
                  */
@@ -234,6 +254,7 @@
                  * If the maxResults option for this method is not specified, the default of 10 will be assumed.
                  *
                  * For this method the maximum number of results per page is limited to 1000.
+                 *
                  * @param options
                  * @param callback
                  */
@@ -250,6 +271,7 @@
                  * If the maxResults option for this method is not specified, then the default value of 5 will be assumed.
                  *
                  * Each term can have as many different contexts as semantic meanings.
+                 *
                  * @param options
                  * @param callback
                  */
@@ -273,6 +295,7 @@
                  *
                  * The posType option enables filtering of the results by parts of speech (one of: NOUN, VERB, ADJECTIVE).
                  * If this option is unspecified, no filtering will occur.
+                 *
                  * @param options
                  * @param callback
                  */
@@ -308,12 +331,26 @@
                 getKeywordsForText: function (options, callback) {
                     options = prepareOptions(options, callback);
                     checkForRequiredParameters("getKeywordsForText", options, [$.retinaApi.parameters.retinaName, $.retinaApi.parameters.text]);
-                    post('text', options.text, options);
-                }
+                    post('text/keywords', options.text, options);
+                },
 
                 // TODO /text/tokenize
+                // TODO getTokensForText
+
                 // TODO /text/slices
-                // TODO /text/bulk
+                // TODO getSlicesForText
+
+                /**
+                 * This endpoint is the bulk operations mode endpoint for /text. The return value is a collection of Fingerprint objects corresponding to the input array of text objects. Only text elements may be used with this endpoint.
+                 * @param options
+                 * @param callback
+                 */
+                getRepresentationsForBulkText: function (options, callback) {
+                    options = prepareOptions(options, callback);
+                    checkForRequiredParameters("getRepresentationsForBulkText", options, [$.retinaApi.parameters.retinaName, $.retinaApi.parameters.texts]);
+                    var textCollection = JSON.stringify(convertArrayToBulk(options.texts, "text"));
+                    post('text/bulk', textCollection, options);
+                }
 
             },
 
