@@ -353,8 +353,23 @@
                     post('text/tokenize', options.text, options);
                 },
 
-                // TODO /text/slices
-                // TODO getSlicesForText
+                /**
+                 * Returns an ordered list of text objects (ordered according to where the text slice appears in the input text).
+                 * A Text object consists of a text slice (defined as a slice by the Retina) and a Fingerprint object corresponding to the text slice.
+                 *
+                 * If the startIndex option for this method is not specified, the default of 0 will be assumed.
+                 *
+                 * If the maxResults option for this method is not specified, then the default value of 10 will be assumed.
+                 * For this method the maximum number of results per page is limited to 10.
+                 *
+                 * @param options
+                 * @param callback
+                 */
+                getSlicesForText: function (options, callback) {
+                    options = prepareOptions(options, callback);
+                    checkForRequiredParameters("getSlicesForText", options, [$.retinaApi.parameters.retinaName, $.retinaApi.parameters.text]);
+                    post('text/slices', options.text, options);
+                },
 
                 /**
                  * This endpoint is the bulk operations mode endpoint for /text. The return value is a collection of Fingerprint objects corresponding to the input array of text objects. Only text elements may be used with this endpoint.
@@ -387,9 +402,13 @@
                 }
 
                 // TODO /expressions/contexts
+
                 // TODO /expressions/similar_terms
+
                 // TODO /expressions/bulk
+
                 // TODO /expressions/contexts/bulk
+
                 // TODO /expressions/similar_terms/bulk
 
             },
