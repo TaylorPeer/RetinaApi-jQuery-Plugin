@@ -137,7 +137,6 @@
                 datatype: "json",
                 error: options.errorHandler
             }).then(function (data) {
-
                 // Ensure the response contained data
                 if (!data) {
                     options.callback(false, $.retinaApi.errors.NoDataError);
@@ -146,7 +145,6 @@
                 } else {
                     options.callback(data);
                 }
-
             });
         }
 
@@ -179,13 +177,7 @@
              * API errors
              */
             errors: {
-                NoDataError: { type: 'NoDataError', message: "No data was supplied to the callback."},
-                InvalidJSON: function (data) {
-                    return {
-                        type: 'InvalidJSON',
-                        message: "The request returned invalid JSON: \n" + data
-                    };
-                }
+                NoDataError: { type: 'NoDataError', message: "No data was supplied to the callback."}
             },
 
             /**
