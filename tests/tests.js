@@ -34,6 +34,23 @@ var testTermQuestionMark = "the?";
 var testTexts = [
     "The National Aeronautics and Space Administration (NASA) is the United States government agency that is responsible for the civilian space program as well as for aeronautics and aerospace research. President Dwight D. Eisenhower established the National Aeronautics and Space Administration (NASA) in 1958 with a distinctly civilian (rather than military) orientation encouraging peaceful applications in space science. The National Aeronautics and Space Act was passed on July 29, 1958, disestablishing NASA's predecessor, the National Advisory Committee for Aeronautics (NACA). The new agency became operational on October 1, 1958. Since that time, most U.S. space exploration efforts have been led by NASA, including the Apollo moon-landing missions, the Skylab space station, and later the Space Shuttle. Currently, NASA is supporting the International Space Station and is overseeing the development of the Orion Multi-Purpose Crew Vehicle, the Space Launch System and Commercial Crew vehicles.", "Hong Kong, officially known as Hong Kong Special Administrative Region of the People's Republic of China, is a region on the southern coast of China geographically enclosed by the Pearl River Delta and South China Sea. Hong Kong is known for its expansive skyline and deep natural harbour, and with a land mass of 1,104 km2 (426 sq mi) and a population of over seven million people, is one of the most densely populated areas in the world. Hong Kong became a colony of the British Empire after the First Opium War (1839-42). Hong Kong Island was first ceded to Great Britain in perpetuity, followed by Kowloon Peninsula in 1860 and then the New Territories was put under lease in 1898. It was occupied by Japan during The Second World War (1941-45), after which the British resumed control until 1997.", "Stephen William Hawking (born 8 January 1942) is an English theoretical physicist, cosmologist, author and Director of Research at the Centre for Theoretical Cosmology within the University of Cambridge. Among his significant scientific works have been a collaboration with Roger Penrose on gravitational singularity theorems in the framework of general relativity, and the theoretical prediction that black holes emit radiation, often called Hawking radiation. Hawking was the first to set forth a cosmology explained by a union of the general theory of relativity and quantum mechanics. He is a vocal supporter of the many-worlds interpretation of quantum mechanics. Hawking has achieved success with works of popular science in which he discusses his own theories and cosmology in general; his A Brief History of Time stayed on the British Sunday Times best-sellers list for a record-breaking 237 weeks.", "The Battle of Wolf 359 is a fictional space battle in the Star Trek universe between the United Federation of Planets and the Borg Collective in the year 2367. The aftermath is depicted in the Star Trek: The Next Generation episode \"The Best of Both Worlds, Part II\" and the battle in Star Trek: Deep Space Nine pilot, \"Emissary.\" The battle occurs at the star Wolf 359, a real star system located 7.78 light years from Earth's solar system, and constitutes a total loss for the Federation, after the single attacking Borg ship obliterates the opposing fleet and proceeds to Earth without significant damage.", "Computational biology involves the development and application of data-analytical and theoretical methods, mathematical modeling and computational simulation techniques to the study of biological, behavioral, and social systems. The field is broadly defined and includes foundations in computer science, applied mathematics, animation, statistics, biochemistry, chemistry, biophysics, molecular biology, genetics, genomics, ecology, evolution, anatomy, neuroscience, and visualization."
 ];
+
+var testExpressions = [
+    {
+        "term": "jaguar"
+    },
+    {
+        "sub": [
+            {
+                "term": "jaguar"
+            },
+            {
+                "positions": [ 2, 3, 4, 5, 6 ]
+            }
+        ]
+    }
+];
+
 /**
  * Collection of setup functions to perform before unit test execution
  */
@@ -386,7 +403,7 @@ function runTests() {
     /**
      * Tests that getTokensForText returns tokens for a given text using a POS tag filter
      */
-    QUnit.asyncTest("testGetTokensForTextForValidText", function (assert) {
+    QUnit.asyncTest("testGetTokensForTextForValidTextWithPosFilter", function (assert) {
         assert.expect(3);
         var options = {retinaName: testRetinaName, text: testTexts[0]};
         var callback = function (data) {
@@ -419,7 +436,7 @@ function runTests() {
     /**
      * Tests that getSlicesForText returns slices for a given text
      */
-    QUnit.asyncTest("testGetSlicesForTextValidText", function (assert) {
+    QUnit.asyncTest("testGetSlicesForTextForValidText", function (assert) {
         assert.expect(2);
         var options = {retinaName: testRetinaName, text: testTexts[0]};
         var callback = function (data) {
@@ -437,15 +454,15 @@ function runTests() {
         assert.expect(1);
         assert.throws(function () {
             $.retinaApi.text.getRepresentationsForBulkText({}, $.noop);
-        }, "Call to 'getRepresentationsForBulkText' is missing the following required parameters: options.retinaName, options.texts", "Exception thrown due to missing options");
+        }, "Call to 'getRepresentationsForBulkText' is missing the following required parameters: options.retinaName, options.text", "Exception thrown due to missing options");
         QUnit.start();
     });
 
     /**
      * Tests that getRepresentationsForBulkText returns fingerprints for an array of texts
      */
-    QUnit.asyncTest("testGetRepresentationsForValidBulk", function (assert) {
-        var options = {retinaName: testRetinaName, texts: testTexts};
+    QUnit.asyncTest("testGetRepresentationsForBulkTextForValidTexts", function (assert) {
+        var options = {retinaName: testRetinaName, text: testTexts};
         var callback = function (data) {
             assert.ok(data.length > 0, "Data was returned");
             $.each(data, function (index, entry) {
@@ -456,4 +473,102 @@ function runTests() {
         $.retinaApi.text.getRepresentationsForBulkText(options, callback);
     });
 
+    /**
+     * Tests that resolveExpression throws an error if no options were configured
+     */
+    QUnit.asyncTest("testResolveExpressionWithoutOptions", function (assert) {
+        assert.expect(1);
+        assert.throws(function () {
+            $.retinaApi.expressions.resolveExpression({}, $.noop);
+        }, "Call to 'resolveExpression' is missing the following required parameters: options.retinaName, options.expression", "Exception thrown due to missing options");
+        QUnit.start();
+    });
+
+    /**
+     * Tests that resolveExpression returns a fingerprint for a given valid expression
+     */
+    QUnit.asyncTest("testResolveExpressionForValidExpression", function (assert) {
+        assert.expect(1);
+        var options = {retinaName: testRetinaName, expression: testExpressions[0]};
+        var callback = function (data) {
+            assert.notEqual(typeof data.positions, "undefined", "Returned data contained a fingerprint");
+            QUnit.start();
+        };
+        $.retinaApi.expressions.resolveExpression(options, callback);
+    });
+
+    /**
+     * Tests that getContextsForExpression throws an error if no options were configured
+     */
+    QUnit.asyncTest("testGetContextsForExpressionWithoutOptions", function (assert) {
+        assert.expect(1);
+        assert.throws(function () {
+            $.retinaApi.expressions.getContextsForExpression({}, $.noop);
+        }, "Call to 'getContextsForExpression' is missing the following required parameters: options.retinaName, options.expression", "Exception thrown due to missing options");
+        QUnit.start();
+    });
+
+    /**
+     * Tests that getContextsForExpression returns a fingerprint for a given valid expression
+     */
+    QUnit.asyncTest("testGetContextsForExpressionForValidExpression", function (assert) {
+        assert.expect(2);
+        var options = {retinaName: testRetinaName, expression: testExpressions[0]};
+        var callback = function (data) {
+            assert.ok(data.length > 0, "At least one value returned");
+            assert.notEqual(typeof data[0].context_id, "undefined", "Results contain a contextId");
+            QUnit.start();
+        };
+        $.retinaApi.expressions.getContextsForExpression(options, callback);
+    });
+
+    /**
+     * Tests that getSimilarTermsForExpressionContext throws an error if no options were configured
+     */
+    QUnit.asyncTest("testGetSimilarTermsForExpressionContextWithoutOptions", function (assert) {
+        assert.expect(1);
+        assert.throws(function () {
+            $.retinaApi.expressions.getSimilarTermsForExpressionContext({}, $.noop);
+        }, "Call to 'getSimilarTermsForExpressionContext' is missing the following required parameters: options.retinaName, options.expression", "Exception thrown due to missing options");
+        QUnit.start();
+    });
+
+    /**
+     * Tests that getSimilarTermsForExpressionContext returns terms for a given valid expression
+     */
+    QUnit.asyncTest("testGetSimilarTermsForExpressionContextForValidExpression", function (assert) {
+        assert.expect(2);
+        var options = {retinaName: testRetinaName, expression: testExpressions[0]};
+        var callback = function (data) {
+            assert.ok(data.length > 0, "At least one value returned");
+            assert.notEqual(typeof data[0].term, "undefined", "Results contain a term");
+            QUnit.start();
+        };
+        $.retinaApi.expressions.getSimilarTermsForExpressionContext(options, callback);
+    });
+
+    /**
+     * Tests that resolveBulkExpression throws an error if no options were configured
+     */
+    QUnit.asyncTest("testResolveBulkExpressionWithoutOptions", function (assert) {
+        assert.expect(1);
+        assert.throws(function () {
+            $.retinaApi.expressions.resolveBulkExpression({}, $.noop);
+        }, "Call to 'resolveBulkExpression' is missing the following required parameters: options.retinaName, options.expression", "Exception thrown due to missing options");
+        QUnit.start();
+    });
+
+    /**
+     * Tests that resolveBulkExpression returns a fingerprint for valid expressions
+     */
+    QUnit.asyncTest("testResolveBulkExpressionForValidExpressions", function (assert) {
+        assert.expect(2);
+        var options = {retinaName: testRetinaName, expression: testExpressions};
+        var callback = function (data) {
+            assert.ok(data.length > 0, "At least one value returned");
+            assert.notEqual(typeof data[0].positions, "undefined", "Results contain a fingerprint");
+            QUnit.start();
+        };
+        $.retinaApi.expressions.resolveBulkExpression(options, callback);
+    });
 }

@@ -79,7 +79,6 @@
          * @param options
          */
         function getUrlParameters(options) {
-
             this.parameters = {};
             this.optionsUrlParameters = {
                 contextId: "context_id",
@@ -141,6 +140,7 @@
                 url = [url, parameters].join('?');
             }
 
+            // Perform call
             $.ajax({
                 url: url,
                 beforeSend: options.beforeSend,
@@ -177,6 +177,7 @@
                 callback: $.noop,
                 contextId: undefined,
                 errorHandler: $.noop,
+                expression: undefined,
                 getFingerprint: undefined,
                 imageEncoding: undefined,
                 imageScalar: undefined,
@@ -188,7 +189,6 @@
                 sparsity: undefined,
                 term: undefined,
                 text: undefined,
-                texts: undefined,
                 startIndex: undefined
             },
 
@@ -204,6 +204,7 @@
              */
             parameters: {
                 contextId: "context_id",
+                expression: "expression",
                 getFingerprint: "get_fingerprint",
                 imageEncoding: "image_encoding",
                 imageScalar: "image_scalar",
@@ -338,11 +339,14 @@
                 },
 
                 /**
-                 * Given an input text this method returns a list of sentences (each of which is a comma-separated list of tokens).
+                 * Given an input text this method returns a list of sentences (each of which is a comma-separated list
+                 * of tokens).
                  *
                  * Part of speech tags can be given in a comma-separated list in the parameter options.posTags.
-                 * If the options.posTags parameter is left blank, terms of all types are retrieved, otherwise this method will return only the terms corresponding to the requested parts of speech.
-                 * The allowed tags are described in more detail on the GATE website (https://gate.ac.uk/sale/tao/splitap7.html#x39-789000G).
+                 * If the options.posTags parameter is left blank, terms of all types are retrieved, otherwise this method
+                 * will return only the terms corresponding to the requested parts of speech.
+                 *
+                 * The allowed tags are described in more detail on the GATE website: https://gate.ac.uk/sale/tao/splitap7.html#x39-789000G
                  *
                  * @param options
                  * @param callback
@@ -355,7 +359,8 @@
 
                 /**
                  * Returns an ordered list of text objects (ordered according to where the text slice appears in the input text).
-                 * A Text object consists of a text slice (defined as a slice by the Retina) and a Fingerprint object corresponding to the text slice.
+                 * A Text object consists of a text slice (defined as a slice by the Retina) and a Fingerprint object
+                 * corresponding to the text slice.
                  *
                  * If the startIndex option for this method is not specified, the default of 0 will be assumed.
                  *
@@ -372,14 +377,15 @@
                 },
 
                 /**
-                 * This endpoint is the bulk operations mode endpoint for /text. The return value is a collection of Fingerprint objects corresponding to the input array of text objects. Only text elements may be used with this endpoint.
+                 * This endpoint is the bulk operations mode endpoint for /text. The return value is a collection of Fingerprint
+                 * objects corresponding to the input array of text objects. Only text elements may be used with this endpoint.
                  * @param options
                  * @param callback
                  */
                 getRepresentationsForBulkText: function (options, callback) {
                     options = prepareOptions(options, callback);
-                    checkForRequiredParameters("getRepresentationsForBulkText", options, [$.retinaApi.parameters.retinaName, $.retinaApi.parameters.texts]);
-                    var textCollection = JSON.stringify(convertArrayToBulk(options.texts, "text"));
+                    checkForRequiredParameters("getRepresentationsForBulkText", options, [$.retinaApi.parameters.retinaName, $.retinaApi.parameters.text]);
+                    var textCollection = JSON.stringify(convertArrayToBulk(options.text, "text"));
                     post('text/bulk', textCollection, options);
                 }
 
@@ -391,25 +397,96 @@
             expressions: {
 
                 /**
-                 * TODO
+                 * This method returns a retina representation (a Fingerprint) of the result of the input expression.
+                 *
+                 * An expression can contain Terms, Fingerprints, Texts and even nested expressions.
+                 *
+                 * The sparsity option can be used to sparsify the evaluated expression to a given percentage. The parameter
+                 * is only interpreted when in the range (0,1), and only applied if the fingerprint is more dense than the
+                 * desired sparsity level.
+                 *
+                 * A detailed explanation of the syntax for expressions, along with examples, can be found in the tutorial:
+                 * http://cortical-io.uservoice.com/knowledgebase/articles/346662-expressionsapi
+                 *
                  * @param options
                  * @param callback
                  */
-                processExpression: function (options, callback) {
+                resolveExpression: function (options, callback) {
                     options = prepareOptions(options, callback);
-                    // TODO checkForRequiredParameters
-                    post('expressions', options.data, options);
+                    checkForRequiredParameters("resolveExpression", options, [$.retinaApi.parameters.retinaName, $.retinaApi.parameters.expression]);
+                    post('expressions', JSON.stringify(options.expression), options);
+                },
+
+                /**
+                 * This method returns a list of contexts for the specified expression.
+                 *
+                 * If the startIndex option for this method is not specified, the default of 0 will be assumed.
+                 * If the maxResults option for this method is not specified, then the default value of 5 will be assumed.
+                 *
+                 * Every expression has as many contexts as different semantic meanings.
+                 *
+                 * The sparsity parameter can be used to sparsify the evaluated expression to a given percentage. The parameter
+                 * is only interpreted when in the range (0,1), and only applied, if the fingerprint is more dense than
+                 * the desired sparsity level.
+                 *
+                 * The expression engine can operate on terms, texts, and fingerprints.
+                 *
+                 * @param options
+                 * @param callback
+                 */
+                getContextsForExpression: function (options, callback) {
+                    options = prepareOptions(options, callback);
+                    checkForRequiredParameters("getContextsForExpression", options, [$.retinaApi.parameters.retinaName, $.retinaApi.parameters.expression]);
+                    post('expressions/contexts', JSON.stringify(options.expression), options);
+                },
+
+                /**
+                 * This method returns a listing of similar terms for the specified input expression.
+                 *
+                 * If a valid contextId is specified the method returns similar terms for the expression in this specific context.
+                 *
+                 * If the startIndex option for this method is not specified, the default of 0 will be assumed.
+                 * If the maxResults option for this method is not specified, the default of 10 will be assumed.
+                 * For this method the maximum number of results in total is limited to 100.
+                 *
+                 * If the contextId option is not specified this method returns a list of similar terms over all contexts.
+                 *
+                 * The posType option enables filtering of the results by parts of speech (one of: NOUN, VERB, ADJECTIVE).
+                 * If this option is unspecified, no filtering will occur.
+                 *
+                 * The sparsity option can be used to sparsify the evaluated expression to a given percentage. The parameter
+                 * is only interpreted when in the range (0,1), and only applied, if the fingerprint is more dense than
+                 * the desired sparsity level.
+                 *
+                 * The expression engine can operate on terms, texts, and fingerprints.
+                 *
+                 * @param options
+                 * @param callback
+                 */
+                getSimilarTermsForExpressionContext: function (options, callback) {
+                    options = prepareOptions(options, callback);
+                    checkForRequiredParameters("getSimilarTermsForExpressionContext", options, [$.retinaApi.parameters.retinaName, $.retinaApi.parameters.expression]);
+                    post('expressions/similar_terms', JSON.stringify(options.expression), options);
+                },
+
+                /**
+                 * This endpoint is the bulk operations mode endpoint for /expressions. Multiple expressions can be entered
+                 * as a comma separated JSON list of expressions. The return value is a list of Fingerprint objects corresponding
+                 * to the input list of expressions.
+                 * @param options
+                 * @param callback
+                 */
+                resolveBulkExpression: function (options, callback) {
+                    options = prepareOptions(options, callback);
+                    checkForRequiredParameters("resolveBulkExpression", options, [$.retinaApi.parameters.retinaName, $.retinaApi.parameters.expression]);
+                    post('expressions/bulk', JSON.stringify(options.expression), options);
                 }
 
-                // TODO /expressions/contexts
-
-                // TODO /expressions/similar_terms
-
-                // TODO /expressions/bulk
-
                 // TODO /expressions/contexts/bulk
+                // TODO getContextsForBulkExpression
 
                 // TODO /expressions/similar_terms/bulk
+                // TODO getSimilarTermsForBulkExpressionContext
 
             },
 
@@ -442,20 +519,21 @@
                  * @param options
                  * @param callback
                  */
-                getImage: function (options, callback) {
+                getImageForExpression: function (options, callback) {
                     options = prepareOptions(options, callback);
                     // TODO checkForRequiredParameters
                     post('image', options.data, options);
                 },
 
                 // TODO /image/compare
+                // TODO getOverlayImage
 
                 /**
                  * TODO
                  * @param options
                  * @param callback
                  */
-                getImageBulk: function (options, callback) {
+                getImageForBulkExpressions: function (options, callback) {
                     options = prepareOptions(options, callback);
                     // TODO checkForRequiredParameters
                     post('image/bulk', options.data, options);
