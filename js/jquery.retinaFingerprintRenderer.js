@@ -121,8 +121,9 @@
          * @param $containerElement
          */
         function setupRenderer($containerElement) {
-            initializeCanvas($("." + FINGERPRINT_CANVAS_CSS_CLASS, $containerElement).get(0), points, fingerprint);
+            var stage = initializeCanvas($("." + FINGERPRINT_CANVAS_CSS_CLASS, $containerElement).get(0), points, fingerprint);
             renderFingerprint(fingerprint, positions, bitColor);
+            stage.update();
         }
 
         /**
@@ -138,7 +139,7 @@
             stage.addChild(shape);
 
             // Enable automatic rendering on every tick
-            createjs.Ticker.addEventListener("tick", stage);
+            // createjs.Ticker.addEventListener("tick", stage);
 
             // Initialize the points object used to contain the internal representation of displayed fingerprints
             resetPoints(points);
@@ -175,7 +176,7 @@
 
             $.each(positions, function (index, entry) {
                 var coordinates = getCoordinate(entry);
-                fingerprint.graphics.beginFill(color).drawRect(coordinates.x * scale, coordinates.y * scale, (scale - 1), (scale - 1));
+                fingerprint.graphics.beginFill(color).drawRect(coordinates.x * scale, coordinates.y * scale, Math.max((scale - 1), 1), Math.max((scale - 1), 1));
                 points[coordinates.x][coordinates.y] = 1;
             });
 
