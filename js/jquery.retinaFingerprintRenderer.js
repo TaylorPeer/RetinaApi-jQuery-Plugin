@@ -50,6 +50,7 @@
         var fingerprintSize = options.fingerprintSize;
         var gridColor = options.gridColor;
         var gridEnabled = options.gridEnabled;
+        var mouseoverCallback = options.mouseoverCallback;
         var positions = options.positions;
         var scale = options.scale;
         var transparent = options.transparent;
@@ -63,6 +64,12 @@
         var points = {};
 
         /**
+         * The last recorded mouseover coordinates (used to throttle firing mouseover events)
+         * @type {{x: undefined, y: undefined}}
+         */
+        var lastCoordinates = {x: undefined, y: undefined};
+
+        /**
          * CreateJS shape object used to render fingerprints
          * @type {createjs.Shape}
          */
@@ -73,6 +80,7 @@
          * @param $containerElement
          */
         function createFingerprintRenderer($containerElement) {
+            // TODO check if already set up
             setupDom($containerElement);
             setupRenderer($containerElement);
             if (gridEnabled) {
@@ -122,6 +130,9 @@
          */
         function setupRenderer($containerElement) {
             var stage = initializeCanvas($("." + FINGERPRINT_CANVAS_CSS_CLASS, $containerElement).get(0), points, fingerprint);
+            if (typeof mouseoverCallback != "undefined") {
+                stage.addEventListener("stagemousemove", mouseMove);
+            }
             renderFingerprint(fingerprint, positions, bitColor);
             stage.update();
         }
@@ -139,7 +150,7 @@
             stage.addChild(shape);
 
             // Enable automatic rendering on every tick
-            // createjs.Ticker.addEventListener("tick", stage);
+            // TODO only necessary when drawing is enabled: createjs.Ticker.addEventListener("tick", stage);
 
             // Initialize the points object used to contain the internal representation of displayed fingerprints
             resetPoints(points);
@@ -175,7 +186,7 @@
             }
 
             $.each(positions, function (index, entry) {
-                var coordinates = getCoordinate(entry);
+                var coordinates = getCoordinateFromPosition(entry);
                 fingerprint.graphics.beginFill(color).drawRect(coordinates.x * scale, coordinates.y * scale, Math.max((scale - 1), 1), Math.max((scale - 1), 1));
                 points[coordinates.x][coordinates.y] = 1;
             });
@@ -214,9 +225,20 @@
          * @param position
          * @returns {{x: Number, y: Number}}
          */
-        function getCoordinate(position) {
+        function getCoordinateFromPosition(position) {
             var y = parseInt(position / fingerprintSize);
             var x = position - (y * fingerprintSize);
+            return {x: x, y: y};
+        }
+
+        /**
+         * Retrieves the scaled x and y coordinates from a mouse event
+         * @param event
+         * @returns {{x: Number, y: Number}}
+         */
+        function getCoordinatesFromMouseEvent(event) {
+            var x = parseInt(event.stageX / scale);
+            var y = parseInt(event.stageY / scale);
             return {x: x, y: y};
         }
 
@@ -227,6 +249,19 @@
         function resetPoints(points) {
             for (var i = 0; i < fingerprintSize; i++) {
                 points[i] = {};
+            }
+        }
+
+        /**
+         * Retrieves the current mouseover coordinates and calls a configured callback with the coordinate data
+         * @param event
+         */
+        function mouseMove(event) {
+            var coordinates = getCoordinatesFromMouseEvent(event);
+            if (lastCoordinates.x != coordinates.x || lastCoordinates.y != coordinates.y) {
+                var position = (coordinates.y * size) + coordinates.x;
+                var data = {x: coordinates.x, y: coordinates.y, position: position};
+                mouseoverCallback(data);
             }
         }
 
@@ -249,6 +284,7 @@
         fingerprintSize: undefined,
         gridColor: "#EDEDED",
         gridEnabled: true,
+        mouseoverCallback: undefined,
         positions: [],
         scale: 1,
         transparent: false
